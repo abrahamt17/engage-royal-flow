@@ -39,6 +39,35 @@ const statusStyles: Record<string, string> = {
 
 const CampaignTable = () => {
   const { data: campaigns = [], isLoading } = useCampaigns();
+  const { data: creators = [] } = useCreators();
+  const { data: assignments = [] } = useCampaignCreators();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState("");
+  const [selectedCreator, setSelectedCreator] = useState("");
+
+  const assignCreator = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("campaign_creators").insert({
+        campaign_id: selectedCampaign,
+        creator_id: selectedCreator,
+        status: "active",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaign_creators"] });
+      toast.success("Creator assigned to campaign!");
+      setOpen(false);
+      setSelectedCampaign("");
+      setSelectedCreator("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const getAssignedCreators = (campaignId: string) => {
+    return assignments.filter((a: any) => a.campaign_id === campaignId);
+  };
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground p-4">Loading campaigns...</div>;
