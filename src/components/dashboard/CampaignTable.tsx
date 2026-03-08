@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -7,7 +8,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCampaigns } from "@/hooks/useData";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useCampaigns, useCreators, useCampaignCreators } from "@/hooks/useData";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { UserPlus } from "lucide-react";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
