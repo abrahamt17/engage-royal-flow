@@ -13,6 +13,7 @@ import Analytics from "./pages/Analytics";
 import Payroll from "./pages/Payroll";
 import FraudDetection from "./pages/FraudDetection";
 import DashboardSettings from "./pages/DashboardSettings";
+import SubmitContent from "./pages/SubmitContent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
             <Route path="/fraud" element={<ProtectedRoute><FraudDetection /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
+            <Route path="/submit-content" element={<ProtectedRoute><SubmitContent /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -11,12 +11,14 @@ import {
   Shield,
   Zap,
   LogOut,
+  Upload,
 } from "lucide-react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/" },
   { icon: Megaphone, label: "Campaigns", path: "/campaigns" },
   { icon: Users, label: "Creators", path: "/creators" },
+  { icon: Upload, label: "Submit Content", path: "/submit-content" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: CreditCard, label: "Payroll", path: "/payroll" },
   { icon: Shield, label: "Fraud Detection", path: "/fraud" },
