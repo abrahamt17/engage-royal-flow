@@ -11,6 +11,7 @@ import {
   Shield,
   Zap,
   LogOut,
+  Upload,
 } from "lucide-react";
 
 const navItems = [
