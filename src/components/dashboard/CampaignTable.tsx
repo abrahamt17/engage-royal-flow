@@ -82,38 +82,99 @@ const CampaignTable = () => {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent border-border">
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaign</TableHead>
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Platform</TableHead>
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Budget</TableHead>
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Spent</TableHead>
-            <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {campaigns.map((c) => (
-            <TableRow key={c.id} className="border-border hover:bg-secondary/30 cursor-pointer transition-colors">
-              <TableCell className="font-medium text-card-foreground">{c.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {c.platforms?.join(", ") || "—"}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className={statusStyles[c.status] ?? ""}>
-                  {c.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">${c.budget.toLocaleString()}</TableCell>
-              <TableCell className="font-medium text-card-foreground">${c.spent.toLocaleString()}</TableCell>
-              <TableCell className="text-muted-foreground">{c.content_type ?? "video"}</TableCell>
+    <>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-border">
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaign</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Platform</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Budget</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Spent</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Creators</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {campaigns.map((c) => {
+              const assigned = getAssignedCreators(c.id);
+              return (
+                <TableRow key={c.id} className="border-border hover:bg-secondary/30 transition-colors">
+                  <TableCell className="font-medium text-card-foreground">{c.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.platforms?.join(", ") || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={statusStyles[c.status] ?? ""}>
+                      {c.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">${c.budget.toLocaleString()}</TableCell>
+                  <TableCell className="font-medium text-card-foreground">${c.spent.toLocaleString()}</TableCell>
+                  <TableCell className="text-muted-foreground">{assigned.length} assigned</TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedCampaign(c.id);
+                        setOpen(true);
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Creator to Campaign</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              assignCreator.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label className="text-xs">Campaign</Label>
+              <Select value={selectedCampaign} onValueChange={setSelectedCampaign} required>
+                <SelectTrigger><SelectValue placeholder="Select campaign" /></SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Creator</Label>
+              <Select value={selectedCreator} onValueChange={setSelectedCreator} required>
+                <SelectTrigger><SelectValue placeholder="Select creator" /></SelectTrigger>
+                <SelectContent>
+                  {creators.map((cr: any) => (
+                    <SelectItem key={cr.id} value={cr.id}>
+                      {cr.name} (@{cr.handle})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full" disabled={assignCreator.isPending}>
+              {assignCreator.isPending ? "Assigning..." : "Assign Creator"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

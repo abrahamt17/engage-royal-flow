@@ -34,6 +34,7 @@ const App = () => (
             <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
             <Route path="/fraud" element={<ProtectedRoute><FraudDetection /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
+            <Route path="/submit-content" element={<ProtectedRoute><SubmitContent /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
