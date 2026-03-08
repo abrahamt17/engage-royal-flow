@@ -13,6 +13,7 @@ import Analytics from "./pages/Analytics";
 import Payroll from "./pages/Payroll";
 import FraudDetection from "./pages/FraudDetection";
 import DashboardSettings from "./pages/DashboardSettings";
+import SubmitContent from "./pages/SubmitContent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
