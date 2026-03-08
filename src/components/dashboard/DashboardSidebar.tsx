@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useBrand } from "@/hooks/useData";
 import {
   LayoutDashboard,
   Megaphone,
@@ -8,6 +10,7 @@ import {
   Settings,
   Shield,
   Zap,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -22,6 +25,8 @@ const navItems = [
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const { signOut } = useAuth();
+  const { data: brand } = useBrand();
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 sidebar-gradient border-r border-sidebar-border flex flex-col">
@@ -57,12 +62,21 @@ const DashboardSidebar = () => {
       <div className="px-4 py-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-2">
           <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-foreground">
-            B
+            {brand?.company_name?.[0]?.toUpperCase() ?? "B"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">Brand Co.</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {brand?.company_name ?? "Loading..."}
+            </p>
             <p className="text-xs text-sidebar-muted truncate">Pro Plan</p>
           </div>
+          <button
+            onClick={signOut}
+            className="text-sidebar-muted hover:text-sidebar-foreground transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </aside>

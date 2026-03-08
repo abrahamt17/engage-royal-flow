@@ -5,36 +5,48 @@ import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import TopCreators from "@/components/dashboard/TopCreators";
 import AudienceMatchChart from "@/components/dashboard/AudienceMatchChart";
 import { DollarSign, Users, Megaphone, TrendingUp } from "lucide-react";
+import { useCampaigns, useCreators } from "@/hooks/useData";
 
 const Index = () => {
+  const { data: campaigns = [] } = useCampaigns();
+  const { data: creators = [] } = useCreators();
+
+  const totalSpent = campaigns.reduce((sum, c) => sum + (c.spent ?? 0), 0);
+  const totalBudget = campaigns.reduce((sum, c) => sum + (c.budget ?? 0), 0);
+  const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
+
   return (
     <DashboardLayout title="Overview" subtitle="Monitor your creator marketing performance">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           title="Total Spend"
-          value="$230,040"
-          change="+12.5% from last month"
-          changeType="positive"
+          value={`$${totalSpent.toLocaleString()}`}
+          change={`$${totalBudget.toLocaleString()} total budget`}
+          changeType="neutral"
           icon={DollarSign}
         />
         <StatCard
-          title="Active Creators"
-          value="1,284"
-          change="+48 this week"
-          changeType="positive"
+          title="Creators Available"
+          value={creators.length.toString()}
+          change="In marketplace"
+          changeType="neutral"
           icon={Users}
         />
         <StatCard
           title="Active Campaigns"
-          value="24"
-          change="3 ending soon"
+          value={activeCampaigns.toString()}
+          change={`${campaigns.length} total`}
           changeType="neutral"
           icon={Megaphone}
         />
         <StatCard
-          title="Avg. ROI"
-          value="3.2x"
-          change="+0.4x vs last quarter"
+          title="Avg. Engagement"
+          value={
+            creators.length
+              ? `${(creators.reduce((s, c) => s + (c.avg_engagement_rate ?? 0), 0) / creators.length).toFixed(1)}%`
+              : "—"
+          }
+          change="Across all creators"
           changeType="positive"
           icon={TrendingUp}
         />
