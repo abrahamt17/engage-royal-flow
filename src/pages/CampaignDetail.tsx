@@ -78,12 +78,6 @@ const CampaignDetail = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold">{campaign.name}</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {campaign.platforms.join(", ")} • {campaign.content_type || "Video"}
-              </p>
-            </div>
           </div>
           <Badge variant="outline" className={statusStyles[campaign.status] ?? ""}>
             {campaign.status}
