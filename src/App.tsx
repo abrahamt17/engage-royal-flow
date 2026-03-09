@@ -18,6 +18,11 @@ import SubmitContent from "./pages/SubmitContent";
 import AIRecommendations from "./pages/AIRecommendations";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
+import DocsHub from "./pages/DocsHub";
+import DevManual from "./pages/docs/DevManual";
+import FullDoc from "./pages/docs/FullDoc";
+import QuickSocial from "./pages/docs/QuickSocial";
+import UserManual from "./pages/docs/UserManual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +48,11 @@ const App = () => (
             <Route path="/ai-insights" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
             <Route path="/submit-content" element={<ProtectedRoute><SubmitContent /></ProtectedRoute>} />
+            <Route path="/docs" element={<ProtectedRoute><DocsHub /></ProtectedRoute>} />
+            <Route path="/docs/dev-manual" element={<ProtectedRoute><DevManual /></ProtectedRoute>} />
+            <Route path="/docs/full" element={<ProtectedRoute><FullDoc /></ProtectedRoute>} />
+            <Route path="/docs/quick-social" element={<ProtectedRoute><QuickSocial /></ProtectedRoute>} />
+            <Route path="/docs/user-manual" element={<ProtectedRoute><UserManual /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

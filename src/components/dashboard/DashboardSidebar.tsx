@@ -15,6 +15,7 @@ import {
   Brain,
   UserCheck,
   UserPlus,
+  BookOpen,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { icon: CreditCard, label: "Payroll", path: "/payroll" },
   { icon: Shield, label: "Fraud Detection", path: "/fraud" },
   { icon: Brain, label: "AI Insights", path: "/ai-insights" },
+  { icon: BookOpen, label: "Documentation", path: "/docs" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
