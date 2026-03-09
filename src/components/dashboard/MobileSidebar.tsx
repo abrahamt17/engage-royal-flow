@@ -13,6 +13,9 @@ import {
   LogOut,
   Upload,
   Menu,
+  Brain,
+  UserCheck,
+  UserPlus,
 } from "lucide-react";
 import {
   Sheet,
@@ -28,10 +31,13 @@ const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/" },
   { icon: Megaphone, label: "Campaigns", path: "/campaigns" },
   { icon: Users, label: "Creators", path: "/creators" },
+  { icon: UserPlus, label: "Onboarding", path: "/creator-onboarding" },
+  { icon: UserCheck, label: "Creator View", path: "/creator-dashboard" },
   { icon: Upload, label: "Submit Content", path: "/submit-content" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: CreditCard, label: "Payroll", path: "/payroll" },
   { icon: Shield, label: "Fraud Detection", path: "/fraud" },
+  { icon: Brain, label: "AI Insights", path: "/ai-insights" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 

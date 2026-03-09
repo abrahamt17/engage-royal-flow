@@ -61,22 +61,51 @@ Deno.serve(async (req) => {
     const campaign = campaignCreator.campaigns;
     const formula = campaign.payroll_formula || { base_pay: 500, performance_multiplier: 2.5, conversion_bonus: 0 };
     
-    // Calculate simple performance score based on views & engagement
-    const engagement = (likes + comments + shares + saves);
-    const engagementRate = views > 0 ? engagement / views : 0;
-    
-    // Performance score from 0-100 (simplified logic)
-    const perfScore = Math.min(100, Math.max(0, (engagementRate * 1000) + (views / 10000)));
-    
-    // Default match score to 1.0 (100%) for simplicity
-    const matchScore = 1.0;
-    
-    // Compute total payroll
+    // === PERFORMANCE SCORE (weighted) ===
+    const v = views || 0;
+    const l = likes || 0;
+    const c = comments || 0;
+    const sh = shares || 0;
+    const sv = saves || 0;
+    const wt = watch_time_pct || 0;
+
+    const engagementRate = v > 0 ? (l + c + sh + sv) / v : 0;
+    const shareRate = v > 0 ? sh / v : 0;
+    const saveRate = v > 0 ? sv / v : 0;
+    const commentRate = v > 0 ? c / v : 0;
+    const watchTimeScore = Math.min(wt / 100, 1);
+
+    const perfScore = Math.min(100, Math.max(0,
+      (0.30 * watchTimeScore * 100) +
+      (0.20 * Math.min(engagementRate * 500, 100)) +
+      (0.15 * Math.min(shareRate * 2000, 100)) +
+      (0.15 * Math.min(saveRate * 2000, 100)) +
+      (0.10 * Math.min(commentRate * 1000, 100)) +
+      (0.10 * Math.min(v / 100000 * 100, 100))
+    ));
+
+    // === AUDIENCE MATCH SCORE ===
+    const matchScore = 1.0; // Default — enhanced when audience data available
+
+    // === BONUS SYSTEM ===
     const multiplier = formula.performance_multiplier || 1.0;
     const basePay = campaignCreator.base_pay || formula.base_pay || 0;
-    const bonus = formula.conversion_bonus || 0;
-    
-    // Payment = BasePay × (PerfScore/100 × MatchScore × Multiplier) + Bonus
+    let bonus = formula.conversion_bonus || 0;
+
+    // Milestone bonus: if views exceed thresholds
+    if (v >= 1000000) bonus += basePay * 0.5;       // 1M+ views: 50% bonus
+    else if (v >= 500000) bonus += basePay * 0.25;   // 500K+: 25% bonus
+    else if (v >= 100000) bonus += basePay * 0.10;   // 100K+: 10% bonus
+
+    // Virality bonus: high share rate indicates viral content
+    if (shareRate > 0.05) bonus += basePay * 0.3;     // 5%+ share rate
+    else if (shareRate > 0.02) bonus += basePay * 0.15;
+
+    // High-retention bonus: excellent watch time
+    if (wt >= 80) bonus += basePay * 0.2;             // 80%+ watch time
+    else if (wt >= 60) bonus += basePay * 0.1;
+
+    // === TOTAL PAYMENT ===
     const totalPayment = basePay * ((perfScore / 100) * matchScore * multiplier) + bonus;
 
     // Update content with scores
@@ -121,7 +150,18 @@ Deno.serve(async (req) => {
       })
       .eq("id", campaign.id);
 
-    return new Response(JSON.stringify({ success: true, content, payroll }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      content, 
+      payroll,
+      bonusBreakdown: {
+        conversionBonus: formula.conversion_bonus || 0,
+        milestoneBonus: v >= 1000000 ? basePay * 0.5 : v >= 500000 ? basePay * 0.25 : v >= 100000 ? basePay * 0.10 : 0,
+        viralityBonus: shareRate > 0.05 ? basePay * 0.3 : shareRate > 0.02 ? basePay * 0.15 : 0,
+        retentionBonus: wt >= 80 ? basePay * 0.2 : wt >= 60 ? basePay * 0.1 : 0,
+        totalBonus: bonus,
+      }
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
