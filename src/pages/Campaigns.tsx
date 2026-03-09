@@ -8,6 +8,7 @@ import CampaignTable from "@/components/dashboard/CampaignTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -47,14 +48,16 @@ const Campaigns = () => {
   const [ageRange, setAgeRange] = useState("18-34");
   const [genders, setGenders] = useState("all");
   const [countries, setCountries] = useState("US");
+  const [enableEscrow, setEnableEscrow] = useState(false);
 
   const createCampaign = useMutation({
     mutationFn: async () => {
       if (!brandId) throw new Error("No brand");
-      const { error } = await supabase.from("campaigns").insert({
+      const budgetAmount = parseFloat(budget) || 0;
+      const { data: campaignData, error } = await supabase.from("campaigns").insert({
         brand_id: brandId,
         name,
-        budget: parseFloat(budget) || 0,
+        budget: budgetAmount,
         platforms,
         content_type: contentType,
         start_date: startDate || null,
@@ -70,8 +73,18 @@ const Campaigns = () => {
           conversion_bonus: parseFloat(conversionBonus) || 0,
           audience_match_weight: 1.0,
         },
-      });
+      }).select().single();
       if (error) throw error;
+
+      // Create escrow if enabled
+      if (enableEscrow && campaignData) {
+        const { error: escrowErr } = await supabase.from("campaign_escrow").insert({
+          campaign_id: campaignData.id,
+          amount: budgetAmount,
+          currency: "USD",
+        });
+        if (escrowErr) console.error("Escrow creation failed:", escrowErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
@@ -95,6 +108,7 @@ const Campaigns = () => {
     setAgeRange("18-34");
     setGenders("all");
     setCountries("US");
+    setEnableEscrow(false);
   };
 
   const togglePlatform = (p: string) => {
@@ -231,6 +245,15 @@ const Campaigns = () => {
                     <Input type="number" value={conversionBonus} onChange={(e) => setConversionBonus(e.target.value)} />
                   </div>
                 </div>
+              </div>
+
+              {/* Escrow */}
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium text-card-foreground">Enable Escrow</p>
+                  <p className="text-xs text-muted-foreground">Hold campaign budget until deliverables are approved</p>
+                </div>
+                <Switch checked={enableEscrow} onCheckedChange={setEnableEscrow} />
               </div>
 
               <Button type="submit" className="w-full" disabled={createCampaign.isPending}>
