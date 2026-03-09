@@ -167,6 +167,8 @@ export type Database = {
           conversion_rate: number | null
           created_at: string
           ctr: number | null
+          fraud_indicators: Json | null
+          fraud_risk_score: number | null
           id: string
           likes: number | null
           performance_score: number | null
@@ -185,6 +187,8 @@ export type Database = {
           conversion_rate?: number | null
           created_at?: string
           ctr?: number | null
+          fraud_indicators?: Json | null
+          fraud_risk_score?: number | null
           id?: string
           likes?: number | null
           performance_score?: number | null
@@ -203,6 +207,8 @@ export type Database = {
           conversion_rate?: number | null
           created_at?: string
           ctr?: number | null
+          fraud_indicators?: Json | null
+          fraud_risk_score?: number | null
           id?: string
           likes?: number | null
           performance_score?: number | null
@@ -229,9 +235,11 @@ export type Database = {
           category: string | null
           created_at: string
           follower_count: number | null
+          fraud_indicators: Json | null
           fraud_risk_score: number | null
           handle: string
           id: string
+          last_fraud_scan: string | null
           name: string
           platforms: string[]
           updated_at: string
@@ -242,9 +250,11 @@ export type Database = {
           category?: string | null
           created_at?: string
           follower_count?: number | null
+          fraud_indicators?: Json | null
           fraud_risk_score?: number | null
           handle: string
           id?: string
+          last_fraud_scan?: string | null
           name: string
           platforms?: string[]
           updated_at?: string
@@ -255,9 +265,11 @@ export type Database = {
           category?: string | null
           created_at?: string
           follower_count?: number | null
+          fraud_indicators?: Json | null
           fraud_risk_score?: number | null
           handle?: string
           id?: string
+          last_fraud_scan?: string | null
           name?: string
           platforms?: string[]
           updated_at?: string
