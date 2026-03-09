@@ -108,6 +108,7 @@ const Campaigns = () => {
     setAgeRange("18-34");
     setGenders("all");
     setCountries("US");
+    setEnableEscrow(false);
   };
 
   const togglePlatform = (p: string) => {
