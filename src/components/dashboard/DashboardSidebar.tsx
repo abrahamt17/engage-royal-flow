@@ -31,7 +31,7 @@ const DashboardSidebar = () => {
   const { data: brand } = useBrand();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 sidebar-gradient border-r border-sidebar-border flex flex-col">
+    <aside className="hidden md:flex fixed left-0 top-0 z-40 h-screen w-64 sidebar-gradient border-r border-sidebar-border flex-col">
       <div className="flex items-center gap-2.5 px-6 py-5 border-b border-sidebar-border">
         <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
           <Zap className="h-4 w-4 text-sidebar-primary-foreground" />
