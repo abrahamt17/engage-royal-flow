@@ -16,6 +16,7 @@ import {
   Brain,
   UserCheck,
   UserPlus,
+  BookOpen,
 } from "lucide-react";
 import {
   Sheet,
