@@ -64,8 +64,33 @@ const Analytics = () => {
     return shares.toString();
   };
 
+  const handleExport = () => {
+    const exportData = content.map((c) => ({
+      platform: c.platform,
+      views: c.views,
+      likes: c.likes,
+      comments: c.comments,
+      shares: c.shares,
+      saves: c.saves,
+      watch_time_pct: c.watch_time_pct,
+      ctr: c.ctr,
+      performance_score: c.performance_score,
+      created_at: c.created_at,
+    }));
+    exportToCSV(exportData, `analytics-${new Date().toISOString().split("T")[0]}`);
+  };
+
   return (
-    <DashboardLayout title="Analytics" subtitle="Deep dive into your campaign performance metrics">
+    <DashboardLayout 
+      title="Analytics" 
+      subtitle="Deep dive into your campaign performance metrics"
+      action={
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={content.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      }
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard 
           title="Total Views" 

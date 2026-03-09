@@ -31,8 +31,30 @@ const Creators = () => {
       (c.category ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExport = () => {
+    const exportData = filtered.map((c) => ({
+      name: c.name,
+      handle: c.handle,
+      platforms: c.platforms?.join(", "),
+      category: c.category,
+      follower_count: c.follower_count,
+      avg_engagement_rate: c.avg_engagement_rate,
+      fraud_risk_score: c.fraud_risk_score,
+    }));
+    exportToCSV(exportData, `creators-${new Date().toISOString().split("T")[0]}`);
+  };
+
   return (
-    <DashboardLayout title="Creators" subtitle="Discover and manage creator partnerships">
+    <DashboardLayout 
+      title="Creators" 
+      subtitle="Discover and manage creator partnerships"
+      action={
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      }
+    >
       <div className="flex items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
