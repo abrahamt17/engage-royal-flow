@@ -159,7 +159,7 @@ const DevManual = () => (
                     <li>• <strong>Supabase (PostgreSQL)</strong> — Database + Auth + Realtime</li>
                     <li>• <strong>Row-Level Security (RLS)</strong> — Per-user data isolation</li>
                     <li>• <strong>Deno Edge Functions</strong> — Serverless backend logic</li>
-                    <li>• <strong>Gemini AI (via Lovable Gateway)</strong> — AI recommendations</li>
+                    <li>• <strong>OpenAI GPT-4o</strong> — AI recommendations</li>
                     <li>• <strong>GoTrue</strong> — Authentication engine</li>
                     <li>• <strong>pg_cron</strong> — Scheduled job execution</li>
                     <li>• <strong>pg_net</strong> — HTTP requests from database</li>
@@ -313,7 +313,7 @@ TABLE: campaign_escrow
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong>Sign Up:</strong> Creates auth.users entry → triggers brand auto-creation via <code className="bg-muted px-1 rounded text-foreground">useAuth</code> hook</li>
                 <li><strong>Sign In:</strong> Returns JWT session → stored in localStorage → attached to all API calls</li>
-                <li><strong>Google OAuth:</strong> Uses Lovable Cloud Auth integration (<code className="bg-muted px-1 rounded text-foreground">lovable.auth.signInWithOAuth</code>)</li>
+                <li><strong>Google OAuth:</strong> Uses Supabase Auth integration (<code className="bg-muted px-1 rounded text-foreground">supabase.auth.signInWithOAuth</code>)</li>
                 <li><strong>Session Management:</strong> <code className="bg-muted px-1 rounded text-foreground">onAuthStateChange</code> listener set up before <code className="bg-muted px-1 rounded text-foreground">getSession</code> (required by Supabase docs)</li>
                 <li><strong>Protected Routes:</strong> <code className="bg-muted px-1 rounded text-foreground">ProtectedRoute</code> component wraps all dashboard routes — redirects to /auth if unauthenticated</li>
                 <li><strong>Brand Creation:</strong> On first login, a brand record is auto-created linked to the user's auth ID</li>
@@ -474,7 +474,7 @@ Retention Bonus:
 
             {/* 10 */}
             <Section id="ai" title="10. AI Recommendation Engine">
-              <p>Powered by <strong className="text-foreground">Google Gemini (via Lovable AI Gateway)</strong> — no API key required:</p>
+              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret:</p>
               <div className="space-y-3">
                 <div className="bg-muted/30 rounded-lg p-3 border border-border">
                   <p className="font-semibold text-foreground text-xs">Creator Recommendations</p>
@@ -645,7 +645,7 @@ Scenario 3: AI Recommendations
             {/* 16 */}
             <Section id="deployment" title="16. Deployment & DevOps">
               <ul className="list-disc pl-6 space-y-1">
-                <li><strong>Frontend:</strong> Deployed via Lovable's CDN. Automatic builds on code changes.</li>
+                <li><strong>Frontend:</strong> Deployed via Vercel or your hosting provider. Automatic builds on push.</li>
                 <li><strong>Edge Functions:</strong> Auto-deployed on push. No manual deployment needed.</li>
                 <li><strong>Database Migrations:</strong> Managed via Supabase migration system. Version-controlled SQL.</li>
                 <li><strong>Environment Variables:</strong> VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY auto-configured. Secrets (API keys) stored in Supabase Vault.</li>

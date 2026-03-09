@@ -20,7 +20,6 @@ function analyzeEngagementPatterns(creator: any, contentItems: any[]): FraudIndi
   const engRate = creator.avg_engagement_rate ?? 0;
 
   // 1. Engagement-to-follower ratio anomaly
-  // Normal: 1-5% for 10k-100k, 0.5-2% for 100k+
   if (followers > 100000 && engRate > 8) {
     indicators.push({
       type: "engagement_anomaly",
@@ -64,7 +63,7 @@ function analyzeEngagementPatterns(creator: any, contentItems: any[]): FraudIndi
       }
     }
 
-    // 4. Bot-like comment patterns: high likes but zero/very low comments
+    // 4. Bot-like comment patterns
     const avgLikes = contentItems.reduce((s, c) => s + (c.likes ?? 0), 0) / contentItems.length;
     const avgComments = contentItems.reduce((s, c) => s + (c.comments ?? 0), 0) / contentItems.length;
     if (avgLikes > 100 && avgComments < 2) {
@@ -87,11 +86,11 @@ function analyzeEngagementPatterns(creator: any, contentItems: any[]): FraudIndi
           description: `Content has ${((likes / views) * 100).toFixed(1)}% like-to-view ratio (normal: 3-8%)`,
           score: 15,
         });
-        break; // only flag once
+        break;
       }
     }
 
-    // 6. Watch time anomaly — very low completion but high engagement
+    // 6. Watch time anomaly
     const avgWatchTime = contentItems.reduce((s, c) => s + (c.watch_time_pct ?? 0), 0) / contentItems.length;
     if (avgWatchTime > 0 && avgWatchTime < 10 && engRate > 5) {
       indicators.push({
@@ -139,14 +138,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { creator_id, scan_all, dismiss } = await req.json();
 
-    // Handle dismiss action — reset score using service role
+    // Handle dismiss action
     if (dismiss && creator_id) {
       const { error } = await supabase
         .from("creators")
@@ -169,7 +168,6 @@ serve(async (req) => {
     const results = [];
 
     for (const creator of creators ?? []) {
-      // Get content for this creator
       const { data: ccLinks } = await supabase
         .from("campaign_creators")
         .select("id")
@@ -189,9 +187,9 @@ serve(async (req) => {
       const indicators = analyzeEngagementPatterns(creator, contentItems);
       const heuristicScore = calculateFraudScore(indicators);
 
-      // AI-enhanced analysis if we have enough data and API key
+      // AI-enhanced analysis if API key is configured
       let aiAnalysis = null;
-      if (LOVABLE_API_KEY && contentItems.length > 0) {
+      if (OPENAI_API_KEY && contentItems.length > 0) {
         try {
           const prompt = `Analyze this influencer for potential fraud. Return a JSON object with "risk_assessment" (string), "confidence" (number 0-100), and "additional_flags" (array of strings).
 
@@ -207,52 +205,27 @@ ${contentItems.slice(0, 5).map((c, i) => `  ${i + 1}. Views: ${c.views}, Likes: 
 Heuristic flags already detected:
 ${indicators.map((i) => `- [${i.severity}] ${i.description}`).join("\n") || "None"}`;
 
-          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
+              model: "gpt-4o-mini",
               messages: [
-                { role: "system", content: "You are a fraud detection analyst for influencer marketing. Analyze creator metrics for signs of fake engagement, bot activity, and purchased followers. Be specific and data-driven." },
+                { role: "system", content: "You are a fraud detection analyst for influencer marketing. Analyze creator metrics for signs of fake engagement, bot activity, and purchased followers. Return JSON only." },
                 { role: "user", content: prompt },
               ],
-              tools: [{
-                type: "function",
-                function: {
-                  name: "fraud_analysis",
-                  description: "Return structured fraud analysis results",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      risk_assessment: { type: "string", description: "Overall risk assessment summary" },
-                      confidence: { type: "number", description: "Confidence in assessment 0-100" },
-                      additional_flags: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "Additional fraud indicators found by AI"
-                      },
-                      ai_score_modifier: {
-                        type: "number",
-                        description: "Score modifier from -10 to +30 based on AI analysis"
-                      }
-                    },
-                    required: ["risk_assessment", "confidence", "additional_flags", "ai_score_modifier"],
-                    additionalProperties: false
-                  }
-                }
-              }],
-              tool_choice: { type: "function", function: { name: "fraud_analysis" } },
+              response_format: { type: "json_object" },
             }),
           });
 
           if (aiResp.ok) {
             const aiData = await aiResp.json();
-            const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-            if (toolCall) {
-              aiAnalysis = JSON.parse(toolCall.function.arguments);
+            const content = aiData.choices?.[0]?.message?.content;
+            if (content) {
+              aiAnalysis = JSON.parse(content);
             }
           }
         } catch (e) {
@@ -271,7 +244,7 @@ ${indicators.map((i) => `- [${i.severity}] ${i.description}`).join("\n") || "Non
             type: "ai_detected",
             severity: finalScore >= 50 ? "high" : "medium",
             description: flag,
-            score: 0, // already accounted for in modifier
+            score: 0,
           });
         }
       }
