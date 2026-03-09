@@ -98,6 +98,53 @@ export type Database = {
           },
         ]
       }
+      campaign_escrow: {
+        Row: {
+          amount: number
+          campaign_id: string
+          created_at: string
+          currency: string
+          funded_at: string | null
+          id: string
+          notes: string | null
+          released_amount: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          campaign_id: string
+          created_at?: string
+          currency?: string
+          funded_at?: string | null
+          id?: string
+          notes?: string | null
+          released_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string
+          created_at?: string
+          currency?: string
+          funded_at?: string | null
+          id?: string
+          notes?: string | null
+          released_amount?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_escrow_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           brand_id: string
@@ -228,6 +275,154 @@ export type Database = {
           },
         ]
       }
+      creator_payment_profiles: {
+        Row: {
+          bank_account_number: string | null
+          bank_country: string | null
+          bank_name: string | null
+          bank_routing_number: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          payment_method: string
+          paypal_email: string | null
+          preferred_currency: string
+          tax_form_submitted_at: string | null
+          tax_form_type: string | null
+          tax_form_verified: boolean | null
+          tax_id_last_four: string | null
+          updated_at: string
+          wise_email: string | null
+        }
+        Insert: {
+          bank_account_number?: string | null
+          bank_country?: string | null
+          bank_name?: string | null
+          bank_routing_number?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          payment_method?: string
+          paypal_email?: string | null
+          preferred_currency?: string
+          tax_form_submitted_at?: string | null
+          tax_form_type?: string | null
+          tax_form_verified?: boolean | null
+          tax_id_last_four?: string | null
+          updated_at?: string
+          wise_email?: string | null
+        }
+        Update: {
+          bank_account_number?: string | null
+          bank_country?: string | null
+          bank_name?: string | null
+          bank_routing_number?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          payment_method?: string
+          paypal_email?: string | null
+          preferred_currency?: string
+          tax_form_submitted_at?: string | null
+          tax_form_type?: string | null
+          tax_form_verified?: boolean | null
+          tax_id_last_four?: string | null
+          updated_at?: string
+          wise_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payment_profiles_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_tax_documents: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          business_name: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          creator_id: string
+          document_type: string
+          ein_last_four: string | null
+          foreign_tax_id: string | null
+          id: string
+          legal_name: string | null
+          signature_data: string | null
+          signed_at: string | null
+          ssn_last_four: string | null
+          state: string | null
+          storage_path: string | null
+          tax_classification: string | null
+          tax_year: number | null
+          verified_at: string | null
+          verified_by: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_name?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          creator_id: string
+          document_type: string
+          ein_last_four?: string | null
+          foreign_tax_id?: string | null
+          id?: string
+          legal_name?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          ssn_last_four?: string | null
+          state?: string | null
+          storage_path?: string | null
+          tax_classification?: string | null
+          tax_year?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_name?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          creator_id?: string
+          document_type?: string
+          ein_last_four?: string | null
+          foreign_tax_id?: string | null
+          id?: string
+          legal_name?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          ssn_last_four?: string | null
+          state?: string | null
+          storage_path?: string | null
+          tax_classification?: string | null
+          tax_year?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tax_documents_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creators: {
         Row: {
           audience_demographics: Json | null
@@ -276,53 +471,143 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_batches: {
+        Row: {
+          batch_number: string
+          brand_id: string
+          created_at: string
+          creator_count: number | null
+          currency: string
+          failure_count: number | null
+          id: string
+          notes: string | null
+          payment_method: string
+          paypal_batch_id: string | null
+          processed_at: string | null
+          scheduled_for: string | null
+          status: string
+          success_count: number | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          batch_number: string
+          brand_id: string
+          created_at?: string
+          creator_count?: number | null
+          currency?: string
+          failure_count?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          paypal_batch_id?: string | null
+          processed_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          success_count?: number | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string
+          brand_id?: string
+          created_at?: string
+          creator_count?: number | null
+          currency?: string
+          failure_count?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          paypal_batch_id?: string | null
+          processed_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          success_count?: number | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll: {
         Row: {
           base_pay: number
+          batch_id: string | null
           bonus: number
           campaign_creator_id: string
           content_id: string | null
+          converted_amount: number | null
+          converted_currency: string | null
           created_at: string
           currency: string
+          escrow_id: string | null
           id: string
           match_score: number
           multiplier: number
           paid_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
           perf_score: number
           status: Database["public"]["Enums"]["payout_status"]
           total_payment: number
         }
         Insert: {
           base_pay?: number
+          batch_id?: string | null
           bonus?: number
           campaign_creator_id: string
           content_id?: string | null
+          converted_amount?: number | null
+          converted_currency?: string | null
           created_at?: string
           currency?: string
+          escrow_id?: string | null
           id?: string
           match_score?: number
           multiplier?: number
           paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
           perf_score?: number
           status?: Database["public"]["Enums"]["payout_status"]
           total_payment?: number
         }
         Update: {
           base_pay?: number
+          batch_id?: string | null
           bonus?: number
           campaign_creator_id?: string
           content_id?: string | null
+          converted_amount?: number | null
+          converted_currency?: string | null
           created_at?: string
           currency?: string
+          escrow_id?: string | null
           id?: string
           match_score?: number
           multiplier?: number
           paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
           perf_score?: number
           status?: Database["public"]["Enums"]["payout_status"]
           total_payment?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "payroll_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payroll_campaign_creator_id_fkey"
             columns: ["campaign_creator_id"]
@@ -335,6 +620,13 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_escrow_id_fkey"
+            columns: ["escrow_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_escrow"
             referencedColumns: ["id"]
           },
         ]
