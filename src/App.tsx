@@ -21,6 +21,12 @@ import SubmitContent from "./pages/SubmitContent";
 import AIRecommendations from "./pages/AIRecommendations";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
+import RealTimeMonitor from "./pages/RealTimeMonitor";
+import CreatorForecasting from "./pages/CreatorForecasting";
+import CampaignAutomation from "./pages/CampaignAutomation";
+import SmartPayroll from "./pages/SmartPayroll";
+import ContractManager from "./pages/ContractManager";
+import CreatorPortfolio from "./pages/CreatorPortfolio";
 import DocsHub from "./pages/DocsHub";
 import DevManual from "./pages/docs/DevManual";
 import FullDoc from "./pages/docs/FullDoc";
@@ -54,6 +60,12 @@ const App = () => (
             <Route path="/ai-insights" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
             <Route path="/submit-content" element={<ProtectedRoute><SubmitContent /></ProtectedRoute>} />
+            <Route path="/realtime" element={<ProtectedRoute><RealTimeMonitor /></ProtectedRoute>} />
+            <Route path="/forecasting" element={<ProtectedRoute><CreatorForecasting /></ProtectedRoute>} />
+            <Route path="/automation" element={<ProtectedRoute><CampaignAutomation /></ProtectedRoute>} />
+            <Route path="/smart-payroll" element={<ProtectedRoute><SmartPayroll /></ProtectedRoute>} />
+            <Route path="/contracts" element={<ProtectedRoute><ContractManager /></ProtectedRoute>} />
+            <Route path="/creator/:id" element={<ProtectedRoute><CreatorPortfolio /></ProtectedRoute>} />
             <Route path="/docs" element={<ProtectedRoute><DocsHub /></ProtectedRoute>} />
             <Route path="/docs/dev-manual" element={<ProtectedRoute><DevManual /></ProtectedRoute>} />
             <Route path="/docs/full" element={<ProtectedRoute><FullDoc /></ProtectedRoute>} />

@@ -114,6 +114,60 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_automations: {
+        Row: {
+          automation_type: string
+          brand_id: string
+          campaign_id: string
+          config: Json | null
+          created_at: string
+          id: string
+          last_run_at: string | null
+          results: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          automation_type?: string
+          brand_id: string
+          campaign_id: string
+          config?: Json | null
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          results?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          automation_type?: string
+          brand_id?: string
+          campaign_id?: string
+          config?: Json | null
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          results?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_automations_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_automations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_creators: {
         Row: {
           base_pay: number | null
@@ -460,6 +514,100 @@ export type Database = {
             columns: ["campaign_creator_id"]
             isOneToOne: false
             referencedRelation: "campaign_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_contracts: {
+        Row: {
+          base_pay: number | null
+          bonus_structure: Json | null
+          brand_id: string
+          brand_signature: string | null
+          campaign_id: string
+          contract_number: string
+          created_at: string
+          creator_id: string
+          creator_signature: string | null
+          deliverables: Json | null
+          end_date: string | null
+          id: string
+          payment_milestones: Json | null
+          signed_by_brand: boolean | null
+          signed_by_brand_at: string | null
+          signed_by_creator: boolean | null
+          signed_by_creator_at: string | null
+          start_date: string | null
+          status: string
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_pay?: number | null
+          bonus_structure?: Json | null
+          brand_id: string
+          brand_signature?: string | null
+          campaign_id: string
+          contract_number: string
+          created_at?: string
+          creator_id: string
+          creator_signature?: string | null
+          deliverables?: Json | null
+          end_date?: string | null
+          id?: string
+          payment_milestones?: Json | null
+          signed_by_brand?: boolean | null
+          signed_by_brand_at?: string | null
+          signed_by_creator?: boolean | null
+          signed_by_creator_at?: string | null
+          start_date?: string | null
+          status?: string
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_pay?: number | null
+          bonus_structure?: Json | null
+          brand_id?: string
+          brand_signature?: string | null
+          campaign_id?: string
+          contract_number?: string
+          created_at?: string
+          creator_id?: string
+          creator_signature?: string | null
+          deliverables?: Json | null
+          end_date?: string | null
+          id?: string
+          payment_milestones?: Json | null
+          signed_by_brand?: boolean | null
+          signed_by_brand_at?: string | null
+          signed_by_creator?: boolean | null
+          signed_by_creator_at?: string | null
+          start_date?: string | null
+          status?: string
+          terms?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_contracts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_contracts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_contracts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
             referencedColumns: ["id"]
           },
         ]
@@ -855,6 +1003,73 @@ export type Database = {
             columns: ["escrow_id"]
             isOneToOne: false
             referencedRelation: "campaign_escrow"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_alerts: {
+        Row: {
+          alert_type: string
+          campaign_id: string | null
+          content_id: string | null
+          created_at: string
+          creator_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string | null
+          metric_name: string | null
+          metric_value: number | null
+          threshold: number | null
+          title: string
+        }
+        Insert: {
+          alert_type?: string
+          campaign_id?: string | null
+          content_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          metric_name?: string | null
+          metric_value?: number | null
+          threshold?: number | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          campaign_id?: string | null
+          content_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          metric_name?: string | null
+          metric_value?: number | null
+          threshold?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_alerts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_alerts_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_alerts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
             referencedColumns: ["id"]
           },
         ]
