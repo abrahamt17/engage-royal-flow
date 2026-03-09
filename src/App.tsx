@@ -18,6 +18,11 @@ import SubmitContent from "./pages/SubmitContent";
 import AIRecommendations from "./pages/AIRecommendations";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import CreatorOnboarding from "./pages/CreatorOnboarding";
+import DocsHub from "./pages/DocsHub";
+import DevManual from "./pages/docs/DevManual";
+import FullDoc from "./pages/docs/FullDoc";
+import QuickSocial from "./pages/docs/QuickSocial";
+import UserManual from "./pages/docs/UserManual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
