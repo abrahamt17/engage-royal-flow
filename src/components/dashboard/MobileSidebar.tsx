@@ -36,9 +36,6 @@ const navItems = [
   { icon: BookOpen, label: "Documentation", path: "/docs" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
-  { icon: BookOpen, label: "Documentation", path: "/docs" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-];
 
 export const MobileSidebar = () => {
   const location = useLocation();
