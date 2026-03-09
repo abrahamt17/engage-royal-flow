@@ -69,7 +69,7 @@ const CampaignDetail = () => {
     : 0;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title={campaign.name} subtitle={`${campaign.platforms.join(", ")} • ${campaign.content_type || "Video"}`}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
