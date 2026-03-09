@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
-import { DollarSign, Clock, CheckCircle, AlertTriangle, Check, X } from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertTriangle, Check, X, Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,6 +16,7 @@ import { usePayroll } from "@/hooks/useData";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { exportToCSV } from "@/lib/csvExport";
 
 const statusStyles: Record<string, string> = {
   paid: "bg-success/10 text-success border-success/20",
@@ -55,8 +56,35 @@ const Payroll = () => {
   const completed = payroll.filter((p) => p.status === "paid").length;
   const flagged = payroll.filter((p) => p.status === "flagged").length;
 
+  const handleExport = () => {
+    const exportData = payroll.map((p: any) => ({
+      creator: p.campaign_creators?.creators?.name ?? "Unknown",
+      campaign: p.campaign_creators?.campaigns?.name ?? "—",
+      base_pay: p.base_pay,
+      perf_score: p.perf_score,
+      match_score: p.match_score,
+      multiplier: p.multiplier,
+      bonus: p.bonus,
+      total_payment: p.total_payment,
+      currency: p.currency,
+      status: p.status,
+      paid_at: p.paid_at,
+      created_at: p.created_at,
+    }));
+    exportToCSV(exportData, `payroll-${new Date().toISOString().split("T")[0]}`);
+  };
+
   return (
-    <DashboardLayout title="Payroll" subtitle="Automated creator compensation engine">
+    <DashboardLayout 
+      title="Payroll" 
+      subtitle="Automated creator compensation engine"
+      action={
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={payroll.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      }
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard title="Total Paid" value={`$${totalPaid.toLocaleString()}`} change="All time" changeType="neutral" icon={DollarSign} />
         <StatCard title="Pending" value={`$${pending.reduce((s, p) => s + p.total_payment, 0).toLocaleString()}`} change={`${pending.length} payouts`} changeType="neutral" icon={Clock} />

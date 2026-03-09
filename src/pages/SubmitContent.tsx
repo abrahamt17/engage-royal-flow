@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
 
 const SubmitContent = () => {
   const queryClient = useQueryClient();
@@ -23,9 +26,51 @@ const SubmitContent = () => {
   const [shares, setShares] = useState("");
   const [saves, setSaves] = useState("");
   const [watchTime, setWatchTime] = useState("");
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [calculatedPayout, setCalculatedPayout] = useState<any>(null);
+
+  const selectedAssignment = assignments.find((a: any) => a.id === assignmentId);
+
+  const calculatePreview = () => {
+    if (!views || !likes || !watchTime) {
+      toast.error("Please fill in views, likes, and watch time to preview");
+      return;
+    }
+
+    const v = parseInt(views) || 0;
+    const l = parseInt(likes) || 0;
+    const wt = parseFloat(watchTime) || 0;
+    
+    // Simple performance score calculation (0-1)
+    const engagementRate = v > 0 ? (l / v) * 100 : 0;
+    const perfScore = Math.min(1, (engagementRate / 10) * (wt / 100));
+    
+    // Match score (simplified)
+    const matchScore = 0.85;
+    
+    // Base pay and multiplier
+    const basePay = selectedAssignment?.base_pay ?? 500;
+    const multiplier = 2.5;
+    
+    const totalPayout = basePay * (perfScore * matchScore * multiplier);
+    
+    setCalculatedPayout({
+      basePay,
+      perfScore: perfScore.toFixed(2),
+      matchScore: matchScore.toFixed(2),
+      multiplier,
+      total: totalPayout.toFixed(2),
+      engagementRate: engagementRate.toFixed(2),
+    });
+    
+    setShowPreview(true);
+  };
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+      setIsSubmitting(true);
       const { data, error } = await supabase.functions.invoke("submit-metrics", {
         body: {
           campaign_creator_id: assignmentId,
@@ -45,10 +90,15 @@ const SubmitContent = () => {
     onSuccess: () => {
       toast.success("Content submitted! Payroll calculated automatically.");
       queryClient.invalidateQueries({ queryKey: ["campaign_creators"] });
+      queryClient.invalidateQueries({ queryKey: ["creator_content"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
       resetForm();
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to submit content");
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     },
   });
 
@@ -62,95 +112,238 @@ const SubmitContent = () => {
     setShares("");
     setSaves("");
     setWatchTime("");
+    setShowPreview(false);
+    setCalculatedPayout(null);
   };
+
+  const isFormValid = assignmentId && contentUrl && views && likes && watchTime;
 
   return (
     <DashboardLayout title="Submit Content" subtitle="Submit content metrics to auto-calculate payroll">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Content Metrics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitMutation.mutate();
-              }}
-              className="space-y-4"
-            >
-              <div className="space-y-2">
-                <Label className="text-xs">Campaign Assignment</Label>
-                <Select value={assignmentId} onValueChange={setAssignmentId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {assignments.map((a: any) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.campaigns?.name} - {a.creators?.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <div className="max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    submitMutation.mutate();
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <Label className="text-xs">Campaign Assignment</Label>
+                    <Select value={assignmentId} onValueChange={setAssignmentId} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select assignment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assignments.map((a: any) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.campaigns?.name} - {a.creators?.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedAssignment && (
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline">Base Pay: ${selectedAssignment.base_pay}</Badge>
+                        <Badge variant="outline">Status: {selectedAssignment.status}</Badge>
+                      </div>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs">Platform</Label>
-                  <Select value={platform} onValueChange={setPlatform}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TikTok">TikTok</SelectItem>
-                      <SelectItem value="Instagram">Instagram</SelectItem>
-                      <SelectItem value="YouTube">YouTube</SelectItem>
-                      <SelectItem value="X / Twitter">X / Twitter</SelectItem>
-                      <SelectItem value="Twitch">Twitch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Content URL</Label>
-                  <Input value={contentUrl} onChange={(e) => setContentUrl(e.target.value)} placeholder="https://..." />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Platform *</Label>
+                      <Select value={platform} onValueChange={setPlatform}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TikTok">TikTok</SelectItem>
+                          <SelectItem value="Instagram">Instagram</SelectItem>
+                          <SelectItem value="YouTube">YouTube</SelectItem>
+                          <SelectItem value="X / Twitter">X / Twitter</SelectItem>
+                          <SelectItem value="Twitch">Twitch</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Content URL *</Label>
+                      <Input 
+                        value={contentUrl} 
+                        onChange={(e) => setContentUrl(e.target.value)} 
+                        placeholder="https://..." 
+                        required
+                        type="url"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs">Views</Label>
-                  <Input type="number" value={views} onChange={(e) => setViews(e.target.value)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Likes</Label>
-                  <Input type="number" value={likes} onChange={(e) => setLikes(e.target.value)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Comments</Label>
-                  <Input type="number" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="0" />
-                </div>
-              </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Required fields: Views, Likes, Watch Time %. Optional: Comments, Shares, Saves
+                    </AlertDescription>
+                  </Alert>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs">Shares</Label>
-                  <Input type="number" value={shares} onChange={(e) => setShares(e.target.value)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Saves</Label>
-                  <Input type="number" value={saves} onChange={(e) => setSaves(e.target.value)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Watch Time %</Label>
-                  <Input type="number" step="0.01" value={watchTime} onChange={(e) => setWatchTime(e.target.value)} placeholder="0.0" />
-                </div>
-              </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Views *</Label>
+                      <Input 
+                        type="number" 
+                        value={views} 
+                        onChange={(e) => setViews(e.target.value)} 
+                        placeholder="0" 
+                        required
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Likes *</Label>
+                      <Input 
+                        type="number" 
+                        value={likes} 
+                        onChange={(e) => setLikes(e.target.value)} 
+                        placeholder="0" 
+                        required
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Comments</Label>
+                      <Input 
+                        type="number" 
+                        value={comments} 
+                        onChange={(e) => setComments(e.target.value)} 
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                  </div>
 
-              <Button type="submit" className="w-full" disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? "Submitting..." : "Submit & Calculate Payroll"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Shares</Label>
+                      <Input 
+                        type="number" 
+                        value={shares} 
+                        onChange={(e) => setShares(e.target.value)} 
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Saves</Label>
+                      <Input 
+                        type="number" 
+                        value={saves} 
+                        onChange={(e) => setSaves(e.target.value)} 
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Watch Time % *</Label>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        value={watchTime} 
+                        onChange={(e) => setWatchTime(e.target.value)} 
+                        placeholder="0.0" 
+                        required
+                        min="0"
+                        max="100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={calculatePreview}
+                      disabled={!isFormValid}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Preview Payout
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1" 
+                      disabled={isSubmitting || !isFormValid}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit & Calculate Payroll"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-1">
+            <Card className={showPreview && calculatedPayout ? "border-success" : ""}>
+              <CardHeader>
+                <CardTitle className="text-sm">Payout Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!showPreview || !calculatedPayout ? (
+                  <div className="text-center py-8">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+                    <p className="text-sm text-muted-foreground">Fill in metrics and click "Preview Payout"</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Alert className="border-success/20 bg-success/5">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <AlertDescription className="text-xs text-success">
+                        Estimated payout calculation
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Base Pay</span>
+                        <span className="font-medium text-card-foreground">${calculatedPayout.basePay}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Performance Score</span>
+                        <span className="font-mono text-card-foreground">{calculatedPayout.perfScore}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Match Score</span>
+                        <span className="font-mono text-card-foreground">{calculatedPayout.matchScore}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Multiplier</span>
+                        <span className="font-mono text-card-foreground">{calculatedPayout.multiplier}x</span>
+                      </div>
+                      <div className="pt-3 border-t border-border">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-semibold text-foreground">Estimated Total</span>
+                          <span className="text-2xl font-bold text-success">${calculatedPayout.total}</span>
+                        </div>
+                      </div>
+                      <div className="pt-2 text-xs text-muted-foreground">
+                        Engagement Rate: {calculatedPayout.engagementRate}%
+                      </div>
+                    </div>
+
+                    <Alert>
+                      <AlertDescription className="text-xs">
+                        Formula: BasePay × (PerfScore × MatchScore × Multiplier)
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

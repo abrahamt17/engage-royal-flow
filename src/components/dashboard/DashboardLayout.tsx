@@ -7,9 +7,10 @@ interface DashboardLayoutProps {
   children: ReactNode;
   title: string;
   subtitle?: string;
+  action?: ReactNode;
 }
 
-const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, title, subtitle, action }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar />
@@ -24,7 +25,10 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
               )}
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {action}
+            <ThemeToggle />
+          </div>
         </header>
         <div className="p-4 md:p-8">{children}</div>
       </main>
