@@ -84,3 +84,31 @@ export const usePayroll = () => {
     enabled: !!brandId,
   });
 };
+
+export const useCreatorContent = () => {
+  const { brandId } = useAuth();
+  return useQuery({
+    queryKey: ["creator_content", brandId],
+    queryFn: async () => {
+      if (!brandId) return [];
+      const { data, error } = await supabase
+        .from("creator_content")
+        .select(`
+          *,
+          campaign_creators!inner(
+            *,
+            creators(*),
+            campaigns!inner(
+              *,
+              brands!inner(id)
+            )
+          )
+        `)
+        .eq("campaign_creators.campaigns.brands.id", brandId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!brandId,
+  });
+};
