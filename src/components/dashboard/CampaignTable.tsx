@@ -39,6 +39,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const CampaignTable = () => {
+  const navigate = useNavigate();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: creators = [] } = useCreators();
   const { data: assignments = [] } = useCampaignCreators();
