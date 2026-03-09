@@ -474,8 +474,7 @@ Retention Bonus:
 
             {/* 10 */}
             <Section id="ai" title="10. AI Recommendation Engine">
-              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret:</p>
-              <div className="space-y-3">
+              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret         <div className="space-y-3">
                 <div className="bg-muted/30 rounded-lg p-3 border border-border">
                   <p className="font-semibold text-foreground text-xs">Creator Recommendations</p>
                   <p className="text-xs mt-1">Analyzes campaign requirements + available creator profiles → recommends top 5 matches with reasoning (audience fit, engagement rate, platform alignment, content category)</p>
@@ -645,8 +644,7 @@ Scenario 3: AI Recommendations
             {/* 16 */}
             <Section id="deployment" title="16. Deployment & DevOps">
               <ul className="list-disc pl-6 space-y-1">
-                <li><strong>Frontend:</strong> Deployed via Lovable's CDN. Automatic builds on code changes.</li>
-                <li><strong>Edge Functions:</strong> Auto-deployed on push. No manual deployment needed.</li>
+                <li><strong>Frontend:</strong> Deployed via Lovable's CVercel / your hosting provider. Automatic builds on push            <li><strong>Edge Functions:</strong> Auto-deployed on push. No manual deployment needed.</li>
                 <li><strong>Database Migrations:</strong> Managed via Supabase migration system. Version-controlled SQL.</li>
                 <li><strong>Environment Variables:</strong> VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY auto-configured. Secrets (API keys) stored in Supabase Vault.</li>
                 <li><strong>Monitoring:</strong> Edge function logs available. Auth logs tracked. Database query analytics via Supabase dashboard.</li>
