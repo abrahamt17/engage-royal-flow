@@ -81,7 +81,7 @@ const FraudDetection = () => {
           <Button
             variant="default"
             size="sm"
-            onClick={() => runScan.mutate()}
+            onClick={() => runScan.mutate(undefined)}
             disabled={runScan.isPending || creators.length === 0}
           >
             {runScan.isPending ? (
