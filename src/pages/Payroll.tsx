@@ -1,8 +1,9 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
-import { DollarSign, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertTriangle, Check, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,6 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePayroll } from "@/hooks/useData";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const statusStyles: Record<string, string> = {
   paid: "bg-success/10 text-success border-success/20",
@@ -23,6 +27,26 @@ const statusStyles: Record<string, string> = {
 
 const Payroll = () => {
   const { data: payroll = [], isLoading } = usePayroll();
+  const queryClient = useQueryClient();
+
+  const updatePayrollStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updates: any = { status };
+      if (status === "paid") {
+        updates.paid_at = new Date().toISOString();
+      }
+      const { error } = await supabase
+        .from("payroll")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      toast.success("Payroll status updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const totalPaid = payroll
     .filter((p) => p.status === "paid")
@@ -57,11 +81,13 @@ const Payroll = () => {
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-border">
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Creator</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaign</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Base Pay</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Perf Score</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Match Score</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Total</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -70,12 +96,48 @@ const Payroll = () => {
                     <TableCell className="font-medium text-card-foreground">
                       {(p.campaign_creators as any)?.creators?.name ?? "Unknown"}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(p.campaign_creators as any)?.campaigns?.name ?? "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">${p.base_pay}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.perf_score.toFixed(2)}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.match_score.toFixed(2)}</TableCell>
                     <TableCell className="font-semibold text-card-foreground">${p.total_payment.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusStyles[p.status] ?? ""}>{p.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {p.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "processing" })}
+                              disabled={updatePayrollStatus.isPending}
+                            >
+                              <Check className="h-4 w-4 text-success" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "flagged" })}
+                              disabled={updatePayrollStatus.isPending}
+                            >
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                        {p.status === "processing" && (
+                          <Button
+                            size="sm"
+                            onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "paid" })}
+                            disabled={updatePayrollStatus.isPending}
+                          >
+                            Mark Paid
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

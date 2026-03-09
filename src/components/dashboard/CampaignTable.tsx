@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const CampaignTable = () => {
+  const navigate = useNavigate();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: creators = [] } = useCreators();
   const { data: assignments = [] } = useCampaignCreators();
@@ -100,7 +102,11 @@ const CampaignTable = () => {
             {campaigns.map((c) => {
               const assigned = getAssignedCreators(c.id);
               return (
-                <TableRow key={c.id} className="border-border hover:bg-secondary/30 transition-colors">
+                <TableRow 
+                  key={c.id} 
+                  className="border-border hover:bg-secondary/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/campaigns/${c.id}`)}
+                >
                   <TableCell className="font-medium text-card-foreground">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.platforms?.join(", ") || "—"}
@@ -117,7 +123,8 @@ const CampaignTable = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedCampaign(c.id);
                         setOpen(true);
                       }}
