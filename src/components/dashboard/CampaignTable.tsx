@@ -102,7 +102,11 @@ const CampaignTable = () => {
             {campaigns.map((c) => {
               const assigned = getAssignedCreators(c.id);
               return (
-                <TableRow key={c.id} className="border-border hover:bg-secondary/30 transition-colors">
+                <TableRow 
+                  key={c.id} 
+                  className="border-border hover:bg-secondary/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/campaigns/${c.id}`)}
+                >
                   <TableCell className="font-medium text-card-foreground">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.platforms?.join(", ") || "—"}
