@@ -474,7 +474,7 @@ Retention Bonus:
 
             {/* 10 */}
             <Section id="ai" title="10. AI Recommendation Engine">
-              <p>Powered by <strong className="text-foreground">Google Gemini (via Lovable AI Gateway)</strong> — no API key required:</p>
+              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret:</p>
               <div className="space-y-3">
                 <div className="bg-muted/30 rounded-lg p-3 border border-border">
                   <p className="font-semibold text-foreground text-xs">Creator Recommendations</p>
