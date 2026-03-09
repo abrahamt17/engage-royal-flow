@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.manage-creators]
 verify_jwt = false
+
+[functions.analyze-content]
+verify_jwt = false
