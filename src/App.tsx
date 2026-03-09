@@ -15,6 +15,9 @@ import Payroll from "./pages/Payroll";
 import FraudDetection from "./pages/FraudDetection";
 import DashboardSettings from "./pages/DashboardSettings";
 import SubmitContent from "./pages/SubmitContent";
+import AIRecommendations from "./pages/AIRecommendations";
+import CreatorDashboard from "./pages/CreatorDashboard";
+import CreatorOnboarding from "./pages/CreatorOnboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,9 +35,12 @@ const App = () => (
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
             <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignDetail /></ProtectedRoute>} />
             <Route path="/creators" element={<ProtectedRoute><Creators /></ProtectedRoute>} />
+            <Route path="/creator-onboarding" element={<ProtectedRoute><CreatorOnboarding /></ProtectedRoute>} />
+            <Route path="/creator-dashboard" element={<ProtectedRoute><CreatorDashboard /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
             <Route path="/fraud" element={<ProtectedRoute><FraudDetection /></ProtectedRoute>} />
+            <Route path="/ai-insights" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
             <Route path="/submit-content" element={<ProtectedRoute><SubmitContent /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
