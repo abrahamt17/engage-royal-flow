@@ -1,1 +1,7 @@
 project_id = "xvrcdupffthvgmrgrvmk"
+
+[functions.submit-metrics]
+verify_jwt = false
+
+[functions.analyze-fraud]
+verify_jwt = false
