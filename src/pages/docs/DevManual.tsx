@@ -159,7 +159,7 @@ const DevManual = () => (
                     <li>• <strong>Supabase (PostgreSQL)</strong> — Database + Auth + Realtime</li>
                     <li>• <strong>Row-Level Security (RLS)</strong> — Per-user data isolation</li>
                     <li>• <strong>Deno Edge Functions</strong> — Serverless backend logic</li>
-                    <li>• <strong>OpenAI GPT-4oecommendations</li>
+                    <li>• <strong>OpenAI GPT-4o</strong> — AI recommendations</li>
                     <li>• <strong>GoTrue</strong> — Authentication engine</li>
                     <li>• <strong>pg_cron</strong> — Scheduled job execution</li>
                     <li>• <strong>pg_net</strong> — HTTP requests from database</li>
