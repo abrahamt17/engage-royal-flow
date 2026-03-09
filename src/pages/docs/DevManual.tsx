@@ -474,7 +474,8 @@ Retention Bonus:
 
             {/* 10 */}
             <Section id="ai" title="10. AI Recommendation Engine">
-              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret         <div className="space-y-3">
+              <p>Powered by <strong className="text-foreground">OpenAI GPT-4o</strong> — requires an OPENAI_API_KEY secret:</p>
+              <div className="space-y-3">
                 <div className="bg-muted/30 rounded-lg p-3 border border-border">
                   <p className="font-semibold text-foreground text-xs">Creator Recommendations</p>
                   <p className="text-xs mt-1">Analyzes campaign requirements + available creator profiles → recommends top 5 matches with reasoning (audience fit, engagement rate, platform alignment, content category)</p>
