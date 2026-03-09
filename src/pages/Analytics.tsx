@@ -3,8 +3,10 @@ import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import AudienceMatchChart from "@/components/dashboard/AudienceMatchChart";
 import StatCard from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Clock, Share2, MousePointerClick } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Eye, Clock, Share2, MousePointerClick, Download } from "lucide-react";
 import { useCreatorContent, usePayroll } from "@/hooks/useData";
+import { exportToCSV } from "@/lib/csvExport";
 import {
   BarChart,
   Bar,
