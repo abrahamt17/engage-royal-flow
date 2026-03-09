@@ -96,12 +96,48 @@ const Payroll = () => {
                     <TableCell className="font-medium text-card-foreground">
                       {(p.campaign_creators as any)?.creators?.name ?? "Unknown"}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(p.campaign_creators as any)?.campaigns?.name ?? "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">${p.base_pay}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.perf_score.toFixed(2)}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.match_score.toFixed(2)}</TableCell>
                     <TableCell className="font-semibold text-card-foreground">${p.total_payment.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusStyles[p.status] ?? ""}>{p.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {p.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "processing" })}
+                              disabled={updatePayrollStatus.isPending}
+                            >
+                              <Check className="h-4 w-4 text-success" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "flagged" })}
+                              disabled={updatePayrollStatus.isPending}
+                            >
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                        {p.status === "processing" && (
+                          <Button
+                            size="sm"
+                            onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "paid" })}
+                            disabled={updatePayrollStatus.isPending}
+                          >
+                            Mark Paid
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
