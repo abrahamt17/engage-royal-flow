@@ -1,12 +1,13 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Download } from "lucide-react";
+import { Search, Download, CreditCard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useCreators } from "@/hooks/useData";
-import { useState } from "react";
 import { exportToCSV } from "@/lib/csvExport";
+import CreatorPaymentProfileDialog from "@/components/payroll/CreatorPaymentProfileDialog";
 
 const riskStyles: Record<string, string> = {
   low: "bg-success/10 text-success border-success/20",
@@ -23,6 +24,7 @@ const getRiskLevel = (score: number | null) => {
 const Creators = () => {
   const { data: creators = [], isLoading } = useCreators();
   const [search, setSearch] = useState("");
+  const [paymentProfileCreator, setPaymentProfileCreator] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = creators.filter(
     (c) =>
@@ -33,37 +35,27 @@ const Creators = () => {
 
   const handleExport = () => {
     const exportData = filtered.map((c) => ({
-      name: c.name,
-      handle: c.handle,
-      platforms: c.platforms?.join(", "),
-      category: c.category,
-      follower_count: c.follower_count,
-      avg_engagement_rate: c.avg_engagement_rate,
-      fraud_risk_score: c.fraud_risk_score,
+      name: c.name, handle: c.handle, platforms: c.platforms?.join(", "),
+      category: c.category, follower_count: c.follower_count,
+      avg_engagement_rate: c.avg_engagement_rate, fraud_risk_score: c.fraud_risk_score,
     }));
     exportToCSV(exportData, `creators-${new Date().toISOString().split("T")[0]}`);
   };
 
   return (
-    <DashboardLayout 
-      title="Creators" 
+    <DashboardLayout
+      title="Creators"
       subtitle="Discover and manage creator partnerships"
       action={
         <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          <Download className="h-4 w-4 mr-2" /> Export CSV
         </Button>
       }
     >
       <div className="flex items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search creators..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input placeholder="Search creators..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Button variant="outline">Filters</Button>
       </div>
@@ -77,7 +69,7 @@ const Creators = () => {
             return (
               <Card
                 key={c.id}
-                className="hover:border-accent/30 transition-colors cursor-pointer animate-fade-in"
+                className="hover:border-accent/30 transition-colors animate-fade-in"
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <CardContent className="p-5">
@@ -119,16 +111,33 @@ const Creators = () => {
                       </p>
                     </div>
                   </div>
-                  {c.category && (
-                    <div className="mt-3 pt-3 border-t border-border">
+                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                    {c.category && (
                       <Badge variant="secondary" className="text-xs">{c.category}</Badge>
-                    </div>
-                  )}
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto text-xs"
+                      onClick={() => setPaymentProfileCreator({ id: c.id, name: c.name })}
+                    >
+                      <CreditCard className="h-3 w-3 mr-1" /> Payment
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+      )}
+
+      {paymentProfileCreator && (
+        <CreatorPaymentProfileDialog
+          open={!!paymentProfileCreator}
+          onOpenChange={(open) => !open && setPaymentProfileCreator(null)}
+          creatorId={paymentProfileCreator.id}
+          creatorName={paymentProfileCreator.name}
+        />
       )}
     </DashboardLayout>
   );
