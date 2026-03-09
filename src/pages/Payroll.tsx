@@ -27,6 +27,26 @@ const statusStyles: Record<string, string> = {
 
 const Payroll = () => {
   const { data: payroll = [], isLoading } = usePayroll();
+  const queryClient = useQueryClient();
+
+  const updatePayrollStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const updates: any = { status };
+      if (status === "paid") {
+        updates.paid_at = new Date().toISOString();
+      }
+      const { error } = await supabase
+        .from("payroll")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      toast.success("Payroll status updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const totalPaid = payroll
     .filter((p) => p.status === "paid")
