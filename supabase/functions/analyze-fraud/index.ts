@@ -144,7 +144,19 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { creator_id, scan_all } = await req.json();
+    const { creator_id, scan_all, dismiss } = await req.json();
+
+    // Handle dismiss action — reset score using service role
+    if (dismiss && creator_id) {
+      const { error } = await supabase
+        .from("creators")
+        .update({ fraud_risk_score: 0, fraud_indicators: [], last_fraud_scan: new Date().toISOString() })
+        .eq("id", creator_id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, action: "dismissed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get creators to scan
     let creatorsQuery = supabase.from("creators").select("*");
