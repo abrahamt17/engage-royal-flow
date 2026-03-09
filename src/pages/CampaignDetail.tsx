@@ -52,7 +52,7 @@ const CampaignDetail = () => {
 
   if (!campaign) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Campaign Not Found">
         <div className="p-8 text-center">
           <p className="text-muted-foreground">Campaign not found</p>
           <Button onClick={() => navigate("/campaigns")} className="mt-4">
