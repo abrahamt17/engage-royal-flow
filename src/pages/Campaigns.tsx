@@ -247,6 +247,15 @@ const Campaigns = () => {
                 </div>
               </div>
 
+              {/* Escrow */}
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium text-card-foreground">Enable Escrow</p>
+                  <p className="text-xs text-muted-foreground">Hold campaign budget until deliverables are approved</p>
+                </div>
+                <Switch checked={enableEscrow} onCheckedChange={setEnableEscrow} />
+              </div>
+
               <Button type="submit" className="w-full" disabled={createCampaign.isPending}>
                 {createCampaign.isPending ? "Creating..." : "Create Campaign"}
               </Button>
