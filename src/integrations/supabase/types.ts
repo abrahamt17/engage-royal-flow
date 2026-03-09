@@ -334,6 +334,75 @@ export type Database = {
           },
         ]
       }
+      compliance_records: {
+        Row: {
+          amount: number | null
+          brand_id: string | null
+          compliance_type: string
+          created_at: string
+          creator_id: string
+          currency: string | null
+          document_ref: string | null
+          due_date: string | null
+          filed_at: string | null
+          id: string
+          jurisdiction: string
+          notes: string | null
+          status: string
+          tax_year: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          brand_id?: string | null
+          compliance_type: string
+          created_at?: string
+          creator_id: string
+          currency?: string | null
+          document_ref?: string | null
+          due_date?: string | null
+          filed_at?: string | null
+          id?: string
+          jurisdiction?: string
+          notes?: string | null
+          status?: string
+          tax_year?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          brand_id?: string | null
+          compliance_type?: string
+          created_at?: string
+          creator_id?: string
+          currency?: string | null
+          document_ref?: string | null
+          due_date?: string | null
+          filed_at?: string | null
+          id?: string
+          jurisdiction?: string
+          notes?: string | null
+          status?: string
+          tax_year?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_records_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_records_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_analysis: {
         Row: {
           ad_compliance_score: number | null
@@ -612,6 +681,53 @@ export type Database = {
           },
         ]
       }
+      creator_loyalty: {
+        Row: {
+          campaigns_completed: number | null
+          consecutive_on_time: number | null
+          created_at: string
+          creator_id: string
+          id: string
+          lifetime_earnings: number | null
+          tier: string
+          tier_updated_at: string | null
+          total_points: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaigns_completed?: number | null
+          consecutive_on_time?: number | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          lifetime_earnings?: number | null
+          tier?: string
+          tier_updated_at?: string | null
+          total_points?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaigns_completed?: number | null
+          consecutive_on_time?: number | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          lifetime_earnings?: number | null
+          tier?: string
+          tier_updated_at?: string | null
+          total_points?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_loyalty_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_payment_profiles: {
         Row: {
           bank_account_number: string | null
@@ -843,6 +959,42 @@ export type Database = {
           price_range_min?: number | null
           total_campaigns_completed?: number | null
           trust_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      industry_benchmarks: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: number
+          period: string | null
+          platform: string
+          sample_size: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value: number
+          period?: string | null
+          platform: string
+          sample_size?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          period?: string | null
+          platform?: string
+          sample_size?: number | null
           updated_at?: string
         }
         Relationships: []
