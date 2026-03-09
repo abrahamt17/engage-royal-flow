@@ -41,14 +41,11 @@ const FraudDetection = () => {
 
   const dismissCreator = useMutation({
     mutationFn: async (creatorId: string) => {
-      // Use edge function with service role to update
+      // Edge function uses service role key so it can update the creators table
       const { error } = await supabase.functions.invoke("analyze-fraud", {
         body: { creator_id: creatorId, dismiss: true },
       });
-      // Fallback: direct update (will fail without update policy, but edge function handles it)
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["creators"] });
