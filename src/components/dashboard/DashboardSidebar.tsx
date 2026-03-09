@@ -15,6 +15,7 @@ import {
   Brain,
   UserCheck,
   UserPlus,
+  BookOpen,
 } from "lucide-react";
 
 const navItems = [
