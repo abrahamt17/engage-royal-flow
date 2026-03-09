@@ -25,7 +25,10 @@ const DashboardLayout = ({ children, title, subtitle, action }: DashboardLayoutP
               )}
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {action}
+            <ThemeToggle />
+          </div>
         </header>
         <div className="p-4 md:p-8">{children}</div>
       </main>
