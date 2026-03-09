@@ -53,10 +53,11 @@ const Campaigns = () => {
   const createCampaign = useMutation({
     mutationFn: async () => {
       if (!brandId) throw new Error("No brand");
-      const { error } = await supabase.from("campaigns").insert({
+      const budgetAmount = parseFloat(budget) || 0;
+      const { data: campaignData, error } = await supabase.from("campaigns").insert({
         brand_id: brandId,
         name,
-        budget: parseFloat(budget) || 0,
+        budget: budgetAmount,
         platforms,
         content_type: contentType,
         start_date: startDate || null,
@@ -72,8 +73,18 @@ const Campaigns = () => {
           conversion_bonus: parseFloat(conversionBonus) || 0,
           audience_match_weight: 1.0,
         },
-      });
+      }).select().single();
       if (error) throw error;
+
+      // Create escrow if enabled
+      if (enableEscrow && campaignData) {
+        const { error: escrowErr } = await supabase.from("campaign_escrow").insert({
+          campaign_id: campaignData.id,
+          amount: budgetAmount,
+          currency: "USD",
+        });
+        if (escrowErr) console.error("Escrow creation failed:", escrowErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
