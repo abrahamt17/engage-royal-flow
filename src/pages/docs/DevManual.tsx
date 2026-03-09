@@ -159,7 +159,7 @@ const DevManual = () => (
                     <li>• <strong>Supabase (PostgreSQL)</strong> — Database + Auth + Realtime</li>
                     <li>• <strong>Row-Level Security (RLS)</strong> — Per-user data isolation</li>
                     <li>• <strong>Deno Edge Functions</strong> — Serverless backend logic</li>
-                    <li>• <strong>OpenAI GPT-4o</strong> — AI recommendations</li>
+                    <li>• <strong>OpenAI GPT-4oecommendations</li>
                     <li>• <strong>GoTrue</strong> — Authentication engine</li>
                     <li>• <strong>pg_cron</strong> — Scheduled job execution</li>
                     <li>• <strong>pg_net</strong> — HTTP requests from database</li>
@@ -313,7 +313,7 @@ TABLE: campaign_escrow
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong>Sign Up:</strong> Creates auth.users entry → triggers brand auto-creation via <code className="bg-muted px-1 rounded text-foreground">useAuth</code> hook</li>
                 <li><strong>Sign In:</strong> Returns JWT session → stored in localStorage → attached to all API calls</li>
-                <li><strong>Google OAuth:</strong> Uses Lovable Cloud Auth integration (<code className="bg-muted px-1 rounded text-foreground">lovable.auth.signInWithOAuth</code>)</li>
+                <li><strong>Google OAuth:</strong> Uses Lovable Cloud AuthSupabase Auth integration (<code className="bg-muted px-1 rounded text-foreground">supabasAuth</code>)</li>
                 <li><strong>Session Management:</strong> <code className="bg-muted px-1 rounded text-foreground">onAuthStateChange</code> listener set up before <code className="bg-muted px-1 rounded text-foreground">getSession</code> (required by Supabase docs)</li>
                 <li><strong>Protected Routes:</strong> <code className="bg-muted px-1 rounded text-foreground">ProtectedRoute</code> component wraps all dashboard routes — redirects to /auth if unauthenticated</li>
                 <li><strong>Brand Creation:</strong> On first login, a brand record is auto-created linked to the user's auth ID</li>

@@ -192,7 +192,7 @@ const FullDoc = () => (
           <Separator />
 
           <Chapter num={6} title="AI Capabilities">
-            <p>Powered by Google Gemini via Lovable AI Gateway. No external API key required.</p>
+            <p>Powered by OpenAI GPT-4o. Requires an OPENAI_API_KEY secret configured in your backend.</p>
             <p>Five analysis modes: Creator Matching, Posting Time Optimization, Content Performance Prediction, Campaign Optimization, and Brand Safety Assessment. Each uses campaign and creator context to generate actionable insights.</p>
           </Chapter>
 
