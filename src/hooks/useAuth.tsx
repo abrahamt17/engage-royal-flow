@@ -33,26 +33,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch or create brand profile
-          const { data: brand } = await supabase
-            .from("brands")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-
-          if (brand) {
-            setBrandId(brand.id);
-          } else {
-            // Auto-create brand on first login
-            const { data: newBrand } = await supabase
+          try {
+            // Fetch or create brand profile
+            const { data: brand } = await supabase
               .from("brands")
-              .insert({
-                user_id: session.user.id,
-                company_name: session.user.email?.split("@")[0] ?? "My Brand",
-              })
               .select("id")
-              .single();
-            setBrandId(newBrand?.id ?? null);
+              .eq("user_id", session.user.id)
+              .maybeSingle();
+
+            if (brand) {
+              setBrandId(brand.id);
+            } else {
+              // Auto-create brand on first login
+              const { data: newBrand } = await supabase
+                .from("brands")
+                .insert({
+                  user_id: session.user.id,
+                  company_name: session.user.email?.split("@")[0] ?? "My Brand",
+                })
+                .select("id")
+                .single();
+              setBrandId(newBrand?.id ?? null);
+            }
+          } catch (err) {
+            console.error("Brand setup error:", err);
+            setBrandId(null);
           }
         } else {
           setBrandId(null);
