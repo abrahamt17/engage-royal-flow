@@ -138,6 +138,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // ===== ADD YOUR OPENAI API KEY (optional for enhanced AI analysis) =====
+    // Set via Supabase Dashboard: Settings → Edge Functions → Secrets
+    // Or via CLI: supabase secrets set OPENAI_API_KEY=sk-your-key-here
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

@@ -17,6 +17,9 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
+    // ===== ADD YOUR OPENAI API KEY =====
+    // Set via Supabase Dashboard: Settings → Edge Functions → Secrets
+    // Or via CLI: supabase secrets set OPENAI_API_KEY=sk-your-key-here
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
