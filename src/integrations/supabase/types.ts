@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_creator_ratings: {
+        Row: {
+          brand_id: string
+          campaign_id: string | null
+          communication_rating: number | null
+          content_quality_rating: number | null
+          created_at: string
+          creator_id: string
+          delivery_rating: number | null
+          id: string
+          overall_rating: number
+          professionalism_rating: number | null
+          review_text: string | null
+        }
+        Insert: {
+          brand_id: string
+          campaign_id?: string | null
+          communication_rating?: number | null
+          content_quality_rating?: number | null
+          created_at?: string
+          creator_id: string
+          delivery_rating?: number | null
+          id?: string
+          overall_rating: number
+          professionalism_rating?: number | null
+          review_text?: string | null
+        }
+        Update: {
+          brand_id?: string
+          campaign_id?: string | null
+          communication_rating?: number | null
+          content_quality_rating?: number | null
+          created_at?: string
+          creator_id?: string
+          delivery_rating?: number | null
+          id?: string
+          overall_rating?: number
+          professionalism_rating?: number | null
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_creator_ratings_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_creator_ratings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_creator_ratings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           company_name: string
@@ -150,48 +214,60 @@ export type Database = {
           brand_id: string
           budget: number
           content_type: string | null
+          cpa: number | null
           created_at: string
           end_date: string | null
           id: string
           name: string
           payroll_formula: Json | null
           platforms: string[]
+          roas: number | null
           spent: number
           start_date: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           target_audience: Json | null
+          total_conversions: number | null
+          total_revenue: number | null
           updated_at: string
         }
         Insert: {
           brand_id: string
           budget?: number
           content_type?: string | null
+          cpa?: number | null
           created_at?: string
           end_date?: string | null
           id?: string
           name: string
           payroll_formula?: Json | null
           platforms?: string[]
+          roas?: number | null
           spent?: number
           start_date?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_audience?: Json | null
+          total_conversions?: number | null
+          total_revenue?: number | null
           updated_at?: string
         }
         Update: {
           brand_id?: string
           budget?: number
           content_type?: string | null
+          cpa?: number | null
           created_at?: string
           end_date?: string | null
           id?: string
           name?: string
           payroll_formula?: Json | null
           platforms?: string[]
+          roas?: number | null
           spent?: number
           start_date?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_audience?: Json | null
+          total_conversions?: number | null
+          total_revenue?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -200,6 +276,119 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_analysis: {
+        Row: {
+          ad_compliance_score: number | null
+          analyzed_at: string
+          brand_exposure_score: number | null
+          brand_logo_seconds: number | null
+          brand_safety_score: number | null
+          content_id: string
+          content_quality_score: number | null
+          id: string
+          key_findings: Json | null
+          model_used: string | null
+          product_visibility: boolean | null
+          sentiment_score: number | null
+          verbal_mentions: number | null
+        }
+        Insert: {
+          ad_compliance_score?: number | null
+          analyzed_at?: string
+          brand_exposure_score?: number | null
+          brand_logo_seconds?: number | null
+          brand_safety_score?: number | null
+          content_id: string
+          content_quality_score?: number | null
+          id?: string
+          key_findings?: Json | null
+          model_used?: string | null
+          product_visibility?: boolean | null
+          sentiment_score?: number | null
+          verbal_mentions?: number | null
+        }
+        Update: {
+          ad_compliance_score?: number | null
+          analyzed_at?: string
+          brand_exposure_score?: number | null
+          brand_logo_seconds?: number | null
+          brand_safety_score?: number | null
+          content_id?: string
+          content_quality_score?: number | null
+          id?: string
+          key_findings?: Json | null
+          model_used?: string | null
+          product_visibility?: boolean | null
+          sentiment_score?: number | null
+          verbal_mentions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_analysis_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversion_tracking: {
+        Row: {
+          campaign_id: string
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          creator_id: string | null
+          id: string
+          revenue: number | null
+          signups: number | null
+          tracking_code: string
+          tracking_type: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          revenue?: number | null
+          signups?: number | null
+          tracking_code: string
+          tracking_type?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          revenue?: number | null
+          signups?: number | null
+          tracking_code?: string
+          tracking_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_tracking_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversion_tracking_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
             referencedColumns: ["id"]
           },
         ]
@@ -425,48 +614,87 @@ export type Database = {
       }
       creators: {
         Row: {
+          audience_authenticity: number | null
           audience_demographics: Json | null
           avg_engagement_rate: number | null
+          bio: string | null
           category: string | null
+          contract_completion_rate: number | null
           created_at: string
+          delivery_reliability: number | null
+          disputes: number | null
           follower_count: number | null
           fraud_indicators: Json | null
           fraud_risk_score: number | null
           handle: string
           id: string
+          is_marketplace_listed: boolean | null
+          languages: string[] | null
           last_fraud_scan: string | null
+          location: string | null
           name: string
           platforms: string[]
+          portfolio_urls: string[] | null
+          price_range_max: number | null
+          price_range_min: number | null
+          total_campaigns_completed: number | null
+          trust_score: number | null
           updated_at: string
         }
         Insert: {
+          audience_authenticity?: number | null
           audience_demographics?: Json | null
           avg_engagement_rate?: number | null
+          bio?: string | null
           category?: string | null
+          contract_completion_rate?: number | null
           created_at?: string
+          delivery_reliability?: number | null
+          disputes?: number | null
           follower_count?: number | null
           fraud_indicators?: Json | null
           fraud_risk_score?: number | null
           handle: string
           id?: string
+          is_marketplace_listed?: boolean | null
+          languages?: string[] | null
           last_fraud_scan?: string | null
+          location?: string | null
           name: string
           platforms?: string[]
+          portfolio_urls?: string[] | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          total_campaigns_completed?: number | null
+          trust_score?: number | null
           updated_at?: string
         }
         Update: {
+          audience_authenticity?: number | null
           audience_demographics?: Json | null
           avg_engagement_rate?: number | null
+          bio?: string | null
           category?: string | null
+          contract_completion_rate?: number | null
           created_at?: string
+          delivery_reliability?: number | null
+          disputes?: number | null
           follower_count?: number | null
           fraud_indicators?: Json | null
           fraud_risk_score?: number | null
           handle?: string
           id?: string
+          is_marketplace_listed?: boolean | null
+          languages?: string[] | null
           last_fraud_scan?: string | null
+          location?: string | null
           name?: string
           platforms?: string[]
+          portfolio_urls?: string[] | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          total_campaigns_completed?: number | null
+          trust_score?: number | null
           updated_at?: string
         }
         Relationships: []
