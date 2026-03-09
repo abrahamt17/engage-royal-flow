@@ -20,6 +20,32 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
+async function fetchOrCreateBrand(userId: string, email?: string): Promise<string | null> {
+  try {
+    const { data: brand } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (brand) return brand.id;
+
+    const { data: newBrand } = await supabase
+      .from("brands")
+      .insert({
+        user_id: userId,
+        company_name: email?.split("@")[0] ?? "My Brand",
+      })
+      .select("id")
+      .single();
+
+    return newBrand?.id ?? null;
+  } catch (err) {
+    console.error("Brand setup error:", err);
+    return null;
+  }
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -27,45 +53,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [brandId, setBrandId] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Safety timeout - never stay loading more than 5s
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn("Auth loading timeout - forcing loaded state");
+        setLoading(false);
+      }
+    }, 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch or create brand profile
-          const { data: brand } = await supabase
-            .from("brands")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-
-          if (brand) {
-            setBrandId(brand.id);
-          } else {
-            // Auto-create brand on first login
-            const { data: newBrand } = await supabase
-              .from("brands")
-              .insert({
-                user_id: session.user.id,
-                company_name: session.user.email?.split("@")[0] ?? "My Brand",
-              })
-              .select("id")
-              .single();
-            setBrandId(newBrand?.id ?? null);
-          }
+          const id = await fetchOrCreateBrand(session.user.id, session.user.email ?? undefined);
+          if (mounted) setBrandId(id);
         } else {
           setBrandId(null);
         }
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       if (!session) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
