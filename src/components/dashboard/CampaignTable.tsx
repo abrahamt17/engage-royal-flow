@@ -123,7 +123,8 @@ const CampaignTable = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedCampaign(c.id);
                         setOpen(true);
                       }}
