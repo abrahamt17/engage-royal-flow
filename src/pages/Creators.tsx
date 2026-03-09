@@ -2,10 +2,11 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useCreators } from "@/hooks/useData";
 import { useState } from "react";
+import { exportToCSV } from "@/lib/csvExport";
 
 const riskStyles: Record<string, string> = {
   low: "bg-success/10 text-success border-success/20",
