@@ -2,36 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrand } from "@/hooks/useData";
 import {
-  LayoutDashboard,
-  Megaphone,
-  Users,
-  BarChart3,
-  CreditCard,
-  Settings,
-  Shield,
-  Zap,
-  LogOut,
-  Upload,
-  Menu,
-  Brain,
-  UserCheck,
-  UserPlus,
-  BookOpen,
-  Store,
-  Target,
-  Sparkles,
-  Activity,
-  TrendingUp,
-  Bot,
-  FileText,
+  LayoutDashboard, Megaphone, Users, BarChart3, CreditCard, Settings, Shield, Zap,
+  LogOut, Upload, Menu, Brain, UserCheck, UserPlus, BookOpen, Store, Target, Sparkles,
+  Activity, TrendingUp, Bot, FileText, Code, Network, Scale, Award, Database,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -49,6 +24,11 @@ const navItems = [
   { icon: Zap, label: "Smart Payroll", path: "/smart-payroll" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: Shield, label: "Fraud Detection", path: "/fraud" },
+  { icon: Network, label: "Influence Graph", path: "/influence-graph" },
+  { icon: Scale, label: "Compliance", path: "/compliance" },
+  { icon: Award, label: "Loyalty", path: "/loyalty" },
+  { icon: Database, label: "Benchmarks", path: "/benchmarks" },
+  { icon: Code, label: "API", path: "/api-docs" },
   { icon: Brain, label: "AI Insights", path: "/ai-insights" },
   { icon: Upload, label: "Submit Content", path: "/submit-content" },
   { icon: UserPlus, label: "Onboarding", path: "/creator-onboarding" },

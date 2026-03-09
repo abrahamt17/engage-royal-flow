@@ -27,6 +27,11 @@ import CampaignAutomation from "./pages/CampaignAutomation";
 import SmartPayroll from "./pages/SmartPayroll";
 import ContractManager from "./pages/ContractManager";
 import CreatorPortfolio from "./pages/CreatorPortfolio";
+import ApiDocs from "./pages/ApiDocs";
+import InfluenceGraph from "./pages/InfluenceGraph";
+import GlobalCompliance from "./pages/GlobalCompliance";
+import CreatorLoyalty from "./pages/CreatorLoyalty";
+import BenchmarkDatabase from "./pages/BenchmarkDatabase";
 import DocsHub from "./pages/DocsHub";
 import DevManual from "./pages/docs/DevManual";
 import FullDoc from "./pages/docs/FullDoc";
@@ -66,6 +71,11 @@ const App = () => (
             <Route path="/smart-payroll" element={<ProtectedRoute><SmartPayroll /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute><ContractManager /></ProtectedRoute>} />
             <Route path="/creator/:id" element={<ProtectedRoute><CreatorPortfolio /></ProtectedRoute>} />
+            <Route path="/api-docs" element={<ProtectedRoute><ApiDocs /></ProtectedRoute>} />
+            <Route path="/influence-graph" element={<ProtectedRoute><InfluenceGraph /></ProtectedRoute>} />
+            <Route path="/compliance" element={<ProtectedRoute><GlobalCompliance /></ProtectedRoute>} />
+            <Route path="/loyalty" element={<ProtectedRoute><CreatorLoyalty /></ProtectedRoute>} />
+            <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkDatabase /></ProtectedRoute>} />
             <Route path="/docs" element={<ProtectedRoute><DocsHub /></ProtectedRoute>} />
             <Route path="/docs/dev-manual" element={<ProtectedRoute><DevManual /></ProtectedRoute>} />
             <Route path="/docs/full" element={<ProtectedRoute><FullDoc /></ProtectedRoute>} />
