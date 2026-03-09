@@ -48,6 +48,7 @@ const Campaigns = () => {
   const [ageRange, setAgeRange] = useState("18-34");
   const [genders, setGenders] = useState("all");
   const [countries, setCountries] = useState("US");
+  const [enableEscrow, setEnableEscrow] = useState(false);
 
   const createCampaign = useMutation({
     mutationFn: async () => {
