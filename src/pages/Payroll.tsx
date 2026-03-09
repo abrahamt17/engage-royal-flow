@@ -1,8 +1,9 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import StatCard from "@/components/dashboard/StatCard";
-import { DollarSign, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertTriangle, Check, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,6 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePayroll } from "@/hooks/useData";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const statusStyles: Record<string, string> = {
   paid: "bg-success/10 text-success border-success/20",
