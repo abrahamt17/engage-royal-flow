@@ -43,6 +43,9 @@ const App = () => (
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
             <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignDetail /></ProtectedRoute>} />
             <Route path="/creators" element={<ProtectedRoute><Creators /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<ProtectedRoute><CreatorMarketplace /></ProtectedRoute>} />
+            <Route path="/conversions" element={<ProtectedRoute><ConversionTracking /></ProtectedRoute>} />
+            <Route path="/content-analysis" element={<ProtectedRoute><ContentAnalysis /></ProtectedRoute>} />
             <Route path="/creator-onboarding" element={<ProtectedRoute><CreatorOnboarding /></ProtectedRoute>} />
             <Route path="/creator-dashboard" element={<ProtectedRoute><CreatorDashboard /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
