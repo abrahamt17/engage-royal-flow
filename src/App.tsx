@@ -71,6 +71,11 @@ const App = () => (
             <Route path="/smart-payroll" element={<ProtectedRoute><SmartPayroll /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute><ContractManager /></ProtectedRoute>} />
             <Route path="/creator/:id" element={<ProtectedRoute><CreatorPortfolio /></ProtectedRoute>} />
+            <Route path="/api-docs" element={<ProtectedRoute><ApiDocs /></ProtectedRoute>} />
+            <Route path="/influence-graph" element={<ProtectedRoute><InfluenceGraph /></ProtectedRoute>} />
+            <Route path="/compliance" element={<ProtectedRoute><GlobalCompliance /></ProtectedRoute>} />
+            <Route path="/loyalty" element={<ProtectedRoute><CreatorLoyalty /></ProtectedRoute>} />
+            <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkDatabase /></ProtectedRoute>} />
             <Route path="/docs" element={<ProtectedRoute><DocsHub /></ProtectedRoute>} />
             <Route path="/docs/dev-manual" element={<ProtectedRoute><DevManual /></ProtectedRoute>} />
             <Route path="/docs/full" element={<ProtectedRoute><FullDoc /></ProtectedRoute>} />
