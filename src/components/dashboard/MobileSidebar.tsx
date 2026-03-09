@@ -17,6 +17,9 @@ import {
   UserCheck,
   UserPlus,
   BookOpen,
+  Store,
+  Target,
+  Sparkles,
 } from "lucide-react";
 import {
   Sheet,
