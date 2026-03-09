@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
     const { campaign_id, brand_id, automation_type, config } = await req.json();
     if (!campaign_id || !brand_id) throw new Error("campaign_id and brand_id required");
@@ -57,11 +57,11 @@ ${(creators || []).slice(0, 10).map((c: any) => `- ${c.name} (${c.handle}): Trus
 
 Return ONLY the JSON.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a campaign automation AI. Return valid JSON only." },
           { role: "user", content: prompt },
@@ -71,7 +71,6 @@ Return ONLY the JSON.`;
 
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiResponse.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error("AI automation failed");
     }
 
