@@ -1,22 +1,24 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import StatCard from "@/components/dashboard/StatCard";
-import { DollarSign, Clock, CheckCircle, AlertTriangle, Check, X, Download } from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertTriangle, Download, Send, FileText, Layers } from "lucide-react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { usePayroll } from "@/hooks/useData";
+import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { exportToCSV } from "@/lib/csvExport";
+import BatchPayoutDialog from "@/components/payroll/BatchPayoutDialog";
+import EscrowPanel from "@/components/payroll/EscrowPanel";
+import BatchHistory from "@/components/payroll/BatchHistory";
+import TaxDocumentDialog from "@/components/payroll/TaxDocumentDialog";
 
 const statusStyles: Record<string, string> = {
   paid: "bg-success/10 text-success border-success/20",
@@ -28,18 +30,78 @@ const statusStyles: Record<string, string> = {
 
 const Payroll = () => {
   const { data: payroll = [], isLoading } = usePayroll();
+  const { brandId } = useAuth();
   const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [taxDialogOpen, setTaxDialogOpen] = useState(false);
+
+  const pendingPayroll = payroll.filter((p) => p.status === "pending");
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === pendingPayroll.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(pendingPayroll.map((p) => p.id)));
+    }
+  };
+
+  const selectedTotal = payroll
+    .filter((p) => selected.has(p.id))
+    .reduce((s, p) => s + (p.total_payment ?? 0), 0);
+
+  const createBatch = useMutation({
+    mutationFn: async (opts: { paymentMethod: string; scheduledFor?: string }) => {
+      const { data, error } = await supabase.functions.invoke("process-payouts", {
+        body: {
+          action: "create_batch",
+          payrollIds: Array.from(selected),
+          brandId,
+          paymentMethod: opts.paymentMethod,
+          scheduledFor: opts.scheduledFor,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // If no scheduled date, process immediately
+      if (!opts.scheduledFor && data?.batch?.id) {
+        const { data: result, error: procErr } = await supabase.functions.invoke("process-payouts", {
+          body: { action: "process_batch", batchId: data.batch.id },
+        });
+        if (procErr) throw procErr;
+        if (result?.error) throw new Error(result.error);
+        return result;
+      }
+      return data;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["payout_batches"] });
+      setSelected(new Set());
+      setBatchDialogOpen(false);
+      if (result?.successCount !== undefined) {
+        toast.success(`Batch processed: ${result.successCount} succeeded, ${result.failureCount} failed`);
+      } else {
+        toast.success("Batch scheduled successfully");
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const updatePayrollStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const updates: any = { status };
-      if (status === "paid") {
-        updates.paid_at = new Date().toISOString();
-      }
-      const { error } = await supabase
-        .from("payroll")
-        .update(updates)
-        .eq("id", id);
+      if (status === "paid") updates.paid_at = new Date().toISOString();
+      const { error } = await supabase.from("payroll").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -49,9 +111,7 @@ const Payroll = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const totalPaid = payroll
-    .filter((p) => p.status === "paid")
-    .reduce((s, p) => s + (p.total_payment ?? 0), 0);
+  const totalPaid = payroll.filter((p) => p.status === "paid").reduce((s, p) => s + (p.total_payment ?? 0), 0);
   const pending = payroll.filter((p) => p.status === "pending");
   const completed = payroll.filter((p) => p.status === "paid").length;
   const flagged = payroll.filter((p) => p.status === "flagged").length;
@@ -60,29 +120,28 @@ const Payroll = () => {
     const exportData = payroll.map((p: any) => ({
       creator: p.campaign_creators?.creators?.name ?? "Unknown",
       campaign: p.campaign_creators?.campaigns?.name ?? "—",
-      base_pay: p.base_pay,
-      perf_score: p.perf_score,
-      match_score: p.match_score,
-      multiplier: p.multiplier,
-      bonus: p.bonus,
-      total_payment: p.total_payment,
-      currency: p.currency,
-      status: p.status,
-      paid_at: p.paid_at,
-      created_at: p.created_at,
+      base_pay: p.base_pay, perf_score: p.perf_score, match_score: p.match_score,
+      multiplier: p.multiplier, bonus: p.bonus, total_payment: p.total_payment,
+      currency: p.currency, status: p.status, payment_method: p.payment_method ?? "—",
+      converted_amount: p.converted_amount ?? "—", converted_currency: p.converted_currency ?? "—",
+      paid_at: p.paid_at, created_at: p.created_at,
     }));
     exportToCSV(exportData, `payroll-${new Date().toISOString().split("T")[0]}`);
   };
 
   return (
-    <DashboardLayout 
-      title="Payroll" 
+    <DashboardLayout
+      title="Payroll"
       subtitle="Automated creator compensation engine"
       action={
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={payroll.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setTaxDialogOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" /> Tax Docs
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={payroll.length === 0}>
+            <Download className="h-4 w-4 mr-2" /> Export
+          </Button>
+        </div>
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -90,6 +149,25 @@ const Payroll = () => {
         <StatCard title="Pending" value={`$${pending.reduce((s, p) => s + p.total_payment, 0).toLocaleString()}`} change={`${pending.length} payouts`} changeType="neutral" icon={Clock} />
         <StatCard title="Completed" value={completed.toString()} change="Payouts" changeType="positive" icon={CheckCircle} />
         <StatCard title="Flagged" value={flagged.toString()} change="Under review" changeType="negative" icon={AlertTriangle} />
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {selected.size > 0 && (
+        <div className="mb-4 p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center justify-between">
+          <p className="text-sm text-card-foreground">
+            <span className="font-semibold">{selected.size}</span> selected · ${selectedTotal.toLocaleString()} total
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>Clear</Button>
+            <Button size="sm" onClick={() => setBatchDialogOpen(true)}>
+              <Send className="h-4 w-4 mr-2" /> Create Batch Payout
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-6 mb-6">
+        <EscrowPanel />
       </div>
 
       <Card>
@@ -103,59 +181,64 @@ const Payroll = () => {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
           ) : payroll.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No payroll records yet. They will appear once campaigns generate content.</p>
+            <p className="text-sm text-muted-foreground">No payroll records yet.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-border">
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={pendingPayroll.length > 0 && selected.size === pendingPayroll.length}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Creator</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaign</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Base Pay</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Perf Score</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Match Score</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Perf</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Match</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Total</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Method</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
                   <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payroll.map((p) => (
+                {payroll.map((p: any) => (
                   <TableRow key={p.id} className="border-border">
+                    <TableCell>
+                      {p.status === "pending" && (
+                        <Checkbox
+                          checked={selected.has(p.id)}
+                          onCheckedChange={() => toggleSelect(p.id)}
+                        />
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium text-card-foreground">
-                      {(p.campaign_creators as any)?.creators?.name ?? "Unknown"}
+                      {p.campaign_creators?.creators?.name ?? "Unknown"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {(p.campaign_creators as any)?.campaigns?.name ?? "—"}
+                      {p.campaign_creators?.campaigns?.name ?? "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">${p.base_pay}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.perf_score.toFixed(2)}</TableCell>
                     <TableCell className="font-mono text-sm text-card-foreground">{p.match_score.toFixed(2)}</TableCell>
-                    <TableCell className="font-semibold text-card-foreground">${p.total_payment.toLocaleString()}</TableCell>
+                    <TableCell className="font-semibold text-card-foreground">
+                      ${p.total_payment.toLocaleString()}
+                      {p.converted_amount && p.converted_currency && p.converted_currency !== p.currency && (
+                        <span className="block text-xs text-muted-foreground font-normal">
+                          ≈ {p.converted_amount} {p.converted_currency}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground capitalize">{p.payment_method ?? "—"}</span>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusStyles[p.status] ?? ""}>{p.status}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {p.status === "pending" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "processing" })}
-                              disabled={updatePayrollStatus.isPending}
-                            >
-                              <Check className="h-4 w-4 text-success" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => updatePayrollStatus.mutate({ id: p.id, status: "flagged" })}
-                              disabled={updatePayrollStatus.isPending}
-                            >
-                              <X className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </>
-                        )}
                         {p.status === "processing" && (
                           <Button
                             size="sm"
@@ -174,6 +257,21 @@ const Payroll = () => {
           )}
         </CardContent>
       </Card>
+
+      <div className="mt-6">
+        <BatchHistory />
+      </div>
+
+      <BatchPayoutDialog
+        open={batchDialogOpen}
+        onOpenChange={setBatchDialogOpen}
+        selectedCount={selected.size}
+        totalAmount={selectedTotal}
+        onCreateBatch={(opts) => createBatch.mutate(opts)}
+        isPending={createBatch.isPending}
+      />
+
+      <TaxDocumentDialog open={taxDialogOpen} onOpenChange={setTaxDialogOpen} />
     </DashboardLayout>
   );
 };
