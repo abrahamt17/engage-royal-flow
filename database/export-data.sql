@@ -66,3 +66,5 @@ VALUES (
 -- creator_loyalty: 0 rows
 -- compliance_records: 0 rows
 -- industry_benchmarks: 0 rows
+--
+-- After importing: run the brand user_id update from docs/MIGRATION.md (step 3).
