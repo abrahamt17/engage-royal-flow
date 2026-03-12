@@ -52,7 +52,17 @@ const Auth = () => {
       },
     });
     if (error) {
-      toast.error(error.message);
+      const isMissingSecret =
+        error.message?.includes("missing OAuth secret") ||
+        (error as { msg?: string }).msg?.includes("missing OAuth secret");
+      if (isMissingSecret) {
+        toast.error(
+          "Google isn't configured in Supabase. Add Client ID and Client secret in Dashboard → Authentication → Sign In / Providers → Google, then Save.",
+          { duration: 8000 }
+        );
+      } else {
+        toast.error(error.message);
+      }
       setLoading(false);
     }
   };
