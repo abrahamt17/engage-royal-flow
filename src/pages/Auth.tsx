@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +50,7 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
@@ -69,12 +68,7 @@ const Auth = () => {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      console.log("Supabase session from Auth page:", data.session);
-    });
-  }, []);
-  
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
