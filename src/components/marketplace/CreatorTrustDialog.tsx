@@ -2,8 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Shield, Clock, CheckCircle, AlertTriangle, TrendingUp } from "lucide-react";
+import { Star, Shield, Clock, CheckCircle, TrendingUp, type LucideIcon } from "lucide-react";
 import { useCreatorTrustDetails, useCreatorRatings } from "@/hooks/useMarketplaceData";
+import type { Database } from "@/integrations/supabase/types";
 
 interface Props {
   open: boolean;
@@ -11,7 +12,13 @@ interface Props {
   creatorId: string;
 }
 
-const ScoreBar = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) => (
+type Creator = Database["public"]["Tables"]["creators"]["Row"];
+type CreatorRating = Database["public"]["Tables"]["brand_creator_ratings"]["Row"] & {
+  brands?: { company_name: string | null } | null;
+  campaigns?: { name: string | null } | null;
+};
+
+const ScoreBar = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: LucideIcon; color: string }) => (
   <div className="flex items-center gap-3">
     <Icon className={`h-4 w-4 ${color} shrink-0`} />
     <div className="flex-1">
@@ -30,18 +37,20 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
 
   if (!creator) return null;
 
-  const trustScore = creator.trust_score ?? 50;
-  const avgRating = ratings.length > 0
-    ? ratings.reduce((sum: number, r: any) => sum + r.overall_rating, 0) / ratings.length
+  const creatorData = creator as Creator;
+  const creatorRatings = ratings as CreatorRating[];
+  const trustScore = creatorData.trust_score ?? 50;
+  const avgRating = creatorRatings.length > 0
+    ? creatorRatings.reduce((sum, rating) => sum + rating.overall_rating, 0) / creatorRatings.length
     : 0;
 
   // Trust score breakdown
-  const histPerf = Math.min((creator.avg_engagement_rate || 0) * 10, 100);
+  const histPerf = Math.min((creatorData.avg_engagement_rate || 0) * 10, 100);
   const brandRat = avgRating > 0 ? (avgRating / 5) * 100 : 50;
-  const fraudHist = 100 - (creator.fraud_risk_score || 0);
-  const delivRel = creator.delivery_reliability ?? 0;
-  const audAuth = creator.audience_authenticity ?? 50;
-  const contractComp = creator.contract_completion_rate ?? 0;
+  const fraudHist = 100 - (creatorData.fraud_risk_score || 0);
+  const delivRel = creatorData.delivery_reliability ?? 0;
+  const audAuth = creatorData.audience_authenticity ?? 50;
+  const contractComp = creatorData.contract_completion_rate ?? 0;
 
   const calcTrust = 0.30 * histPerf + 0.20 * brandRat + 0.15 * fraudHist + 0.15 * delivRel + 0.10 * audAuth + 0.10 * contractComp;
 
@@ -51,11 +60,11 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-              {creator.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+              {creatorData.name?.split(" ").map((namePart) => namePart[0]).join("").slice(0, 2)}
             </div>
             <div>
-              <p>{creator.name}</p>
-              <p className="text-xs text-muted-foreground font-normal">{creator.handle}</p>
+              <p>{creatorData.name}</p>
+              <p className="text-xs text-muted-foreground font-normal">{creatorData.handle}</p>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -78,7 +87,7 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
                 <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
               </div>
               <p className="text-xs text-muted-foreground">Avg Brand Rating</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{ratings.length} review{ratings.length !== 1 ? "s" : ""}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{creatorRatings.length} review{creatorRatings.length !== 1 ? "s" : ""}</p>
             </CardContent>
           </Card>
         </div>
@@ -104,42 +113,42 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
         <div className="grid grid-cols-3 gap-3">
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-lg font-bold">{creator.total_campaigns_completed ?? 0}</p>
+              <p className="text-lg font-bold">{creatorData.total_campaigns_completed ?? 0}</p>
               <p className="text-[10px] text-muted-foreground">Campaigns Done</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-lg font-bold">{creator.disputes ?? 0}</p>
+              <p className="text-lg font-bold">{creatorData.disputes ?? 0}</p>
               <p className="text-[10px] text-muted-foreground">Disputes</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-lg font-bold">{creator.fraud_risk_score ?? 0}</p>
+              <p className="text-lg font-bold">{creatorData.fraud_risk_score ?? 0}</p>
               <p className="text-[10px] text-muted-foreground">Fraud Risk</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Brand Reviews */}
-        {ratings.length > 0 && (
+        {creatorRatings.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold mb-2">Brand Reviews</h3>
             <div className="space-y-2">
-              {ratings.slice(0, 5).map((r: any) => (
-                <Card key={r.id}>
+              {creatorRatings.slice(0, 5).map((rating) => (
+                <Card key={rating.id}>
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">{r.brands?.company_name ?? "Brand"}</span>
+                      <span className="text-xs font-medium">{rating.brands?.company_name ?? "Brand"}</span>
                       <div className="flex items-center gap-0.5">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3 w-3 ${i < r.overall_rating ? "text-amber-500 fill-amber-500" : "text-muted"}`} />
+                          <Star key={i} className={`h-3 w-3 ${i < rating.overall_rating ? "text-amber-500 fill-amber-500" : "text-muted"}`} />
                         ))}
                       </div>
                     </div>
-                    {r.campaigns?.name && <p className="text-[10px] text-muted-foreground mb-1">Campaign: {r.campaigns.name}</p>}
-                    {r.review_text && <p className="text-xs text-muted-foreground">{r.review_text}</p>}
+                    {rating.campaigns?.name && <p className="text-[10px] text-muted-foreground mb-1">Campaign: {rating.campaigns.name}</p>}
+                    {rating.review_text && <p className="text-xs text-muted-foreground">{rating.review_text}</p>}
                   </CardContent>
                 </Card>
               ))}
