@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import StatCard from "@/components/dashboard/StatCard";
-import { DollarSign, Clock, CheckCircle, AlertTriangle, Download, Send, FileText, Layers } from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertTriangle, Download, Send, FileText } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -19,6 +19,7 @@ import BatchPayoutDialog from "@/components/payroll/BatchPayoutDialog";
 import EscrowPanel from "@/components/payroll/EscrowPanel";
 import BatchHistory from "@/components/payroll/BatchHistory";
 import TaxDocumentDialog from "@/components/payroll/TaxDocumentDialog";
+import type { Database } from "@/integrations/supabase/types";
 
 const statusStyles: Record<string, string> = {
   paid: "bg-success/10 text-success border-success/20",
@@ -28,6 +29,17 @@ const statusStyles: Record<string, string> = {
   flagged: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
+type PayrollRow = Database["public"]["Tables"]["payroll"]["Row"];
+type PayrollStatus = Database["public"]["Enums"]["payout_status"];
+type PayrollRecord = PayrollRow & {
+  campaign_creators?: {
+    creators?: { name: string | null } | null;
+    campaigns?: { name: string | null } | null;
+  } | null;
+};
+
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Something went wrong";
+
 const Payroll = () => {
   const { data: payroll = [], isLoading } = usePayroll();
   const { brandId } = useAuth();
@@ -35,13 +47,18 @@ const Payroll = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [taxDialogOpen, setTaxDialogOpen] = useState(false);
+  const payrollRecords = payroll as PayrollRecord[];
 
-  const pendingPayroll = payroll.filter((p) => p.status === "pending");
+  const pendingPayroll = payrollRecords.filter((p) => p.status === "pending");
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -54,7 +71,7 @@ const Payroll = () => {
     }
   };
 
-  const selectedTotal = payroll
+  const selectedTotal = payrollRecords
     .filter((p) => selected.has(p.id))
     .reduce((s, p) => s + (p.total_payment ?? 0), 0);
 
@@ -94,12 +111,12 @@ const Payroll = () => {
         toast.success("Batch scheduled successfully");
       }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const updatePayrollStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const updates: any = { status };
+    mutationFn: async ({ id, status }: { id: string; status: PayrollStatus }) => {
+      const updates: Database["public"]["Tables"]["payroll"]["Update"] = { status };
       if (status === "paid") updates.paid_at = new Date().toISOString();
       const { error } = await supabase.from("payroll").update(updates).eq("id", id);
       if (error) throw error;
@@ -108,16 +125,16 @@ const Payroll = () => {
       queryClient.invalidateQueries({ queryKey: ["payroll"] });
       toast.success("Payroll status updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
-  const totalPaid = payroll.filter((p) => p.status === "paid").reduce((s, p) => s + (p.total_payment ?? 0), 0);
-  const pending = payroll.filter((p) => p.status === "pending");
-  const completed = payroll.filter((p) => p.status === "paid").length;
-  const flagged = payroll.filter((p) => p.status === "flagged").length;
+  const totalPaid = payrollRecords.filter((p) => p.status === "paid").reduce((s, p) => s + (p.total_payment ?? 0), 0);
+  const pending = payrollRecords.filter((p) => p.status === "pending");
+  const completed = payrollRecords.filter((p) => p.status === "paid").length;
+  const flagged = payrollRecords.filter((p) => p.status === "flagged").length;
 
   const handleExport = () => {
-    const exportData = payroll.map((p: any) => ({
+    const exportData = payrollRecords.map((p) => ({
       creator: p.campaign_creators?.creators?.name ?? "Unknown",
       campaign: p.campaign_creators?.campaigns?.name ?? "—",
       base_pay: p.base_pay, perf_score: p.perf_score, match_score: p.match_score,
@@ -138,7 +155,7 @@ const Payroll = () => {
           <Button variant="outline" size="sm" onClick={() => setTaxDialogOpen(true)}>
             <FileText className="h-4 w-4 mr-2" /> Tax Docs
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={payroll.length === 0}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={payrollRecords.length === 0}>
             <Download className="h-4 w-4 mr-2" /> Export
           </Button>
         </div>
@@ -180,7 +197,7 @@ const Payroll = () => {
         <CardContent>
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : payroll.length === 0 ? (
+          ) : payrollRecords.length === 0 ? (
             <p className="text-sm text-muted-foreground">No payroll records yet.</p>
           ) : (
             <Table>
@@ -204,7 +221,7 @@ const Payroll = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payroll.map((p: any) => (
+                {payrollRecords.map((p) => (
                   <TableRow key={p.id} className="border-border">
                     <TableCell>
                       {p.status === "pending" && (
