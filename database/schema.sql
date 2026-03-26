@@ -116,29 +116,6 @@ CREATE TABLE IF NOT EXISTS public.creator_content (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Payroll entries
-CREATE TABLE IF NOT EXISTS public.payroll (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  campaign_creator_id uuid NOT NULL REFERENCES public.campaign_creators(id),
-  content_id uuid REFERENCES public.creator_content(id),
-  batch_id uuid REFERENCES public.payout_batches(id),
-  escrow_id uuid REFERENCES public.campaign_escrow(id),
-  base_pay numeric NOT NULL DEFAULT 0,
-  perf_score numeric NOT NULL DEFAULT 0,
-  match_score numeric NOT NULL DEFAULT 0,
-  multiplier numeric NOT NULL DEFAULT 1,
-  bonus numeric NOT NULL DEFAULT 0,
-  total_payment numeric NOT NULL DEFAULT 0,
-  currency text NOT NULL DEFAULT 'USD',
-  converted_amount numeric,
-  converted_currency text,
-  payment_method text DEFAULT 'paypal',
-  payment_reference text,
-  status public.payout_status NOT NULL DEFAULT 'pending',
-  paid_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
 -- Payout batches
 CREATE TABLE IF NOT EXISTS public.payout_batches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -171,6 +148,29 @@ CREATE TABLE IF NOT EXISTS public.campaign_escrow (
   notes text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Payroll entries
+CREATE TABLE IF NOT EXISTS public.payroll (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_creator_id uuid NOT NULL REFERENCES public.campaign_creators(id),
+  content_id uuid REFERENCES public.creator_content(id),
+  batch_id uuid REFERENCES public.payout_batches(id),
+  escrow_id uuid REFERENCES public.campaign_escrow(id),
+  base_pay numeric NOT NULL DEFAULT 0,
+  perf_score numeric NOT NULL DEFAULT 0,
+  match_score numeric NOT NULL DEFAULT 0,
+  multiplier numeric NOT NULL DEFAULT 1,
+  bonus numeric NOT NULL DEFAULT 0,
+  total_payment numeric NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'USD',
+  converted_amount numeric,
+  converted_currency text,
+  payment_method text DEFAULT 'paypal',
+  payment_reference text,
+  status public.payout_status NOT NULL DEFAULT 'pending',
+  paid_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Creator payment profiles
