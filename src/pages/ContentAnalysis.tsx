@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Eye, Brain, Shield, Smile, Volume2, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 import { useAllContentAnalyses } from "@/hooks/useMarketplaceData";
 import { useCreatorContent } from "@/hooks/useData";
@@ -22,6 +23,10 @@ const ContentAnalysis = () => {
   const [contentDescription, setContentDescription] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [platformFilter, setPlatformFilter] = useState("all");
+  const [complianceFilter, setComplianceFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
 
   const handleAnalyze = async () => {
     if (!selectedContentId) {
@@ -57,6 +62,52 @@ const ContentAnalysis = () => {
       </div>
     </div>
   );
+
+  const platformOptions = Array.from(
+    new Set(
+      analyses
+        .map((analysis: any) => analysis.creator_content?.platform)
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const filteredAnalyses = analyses
+    .filter((analysis: any) => {
+      const content = analysis.creator_content;
+      const creator = content?.campaign_creators?.creators;
+      const campaign = content?.campaign_creators?.campaigns;
+      const searchTarget = [
+        creator?.name,
+        creator?.handle,
+        campaign?.name,
+        content?.platform,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !searchQuery || searchTarget.includes(searchQuery.toLowerCase());
+      const matchesPlatform = platformFilter === "all" || content?.platform === platformFilter;
+      const matchesCompliance =
+        complianceFilter === "all" ||
+        (complianceFilter === "compliant" && (analysis.ad_compliance_score || 0) >= 70) ||
+        (complianceFilter === "review" && (analysis.ad_compliance_score || 0) < 70);
+
+      return matchesSearch && matchesPlatform && matchesCompliance;
+    })
+    .sort((left: any, right: any) => {
+      if (sortBy === "brand_exposure") {
+        return (right.brand_exposure_score || 0) - (left.brand_exposure_score || 0);
+      }
+      if (sortBy === "sentiment") {
+        return (right.sentiment_score || 0) - (left.sentiment_score || 0);
+      }
+      if (sortBy === "risk") {
+        return (left.brand_safety_score || 0) - (right.brand_safety_score || 0);
+      }
+
+      return new Date(right.analyzed_at || 0).getTime() - new Date(left.analyzed_at || 0).getTime();
+    });
 
   return (
     <DashboardLayout
@@ -114,6 +165,83 @@ const ContentAnalysis = () => {
         </Card>
       </div>
 
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="xl:col-span-1">
+              <Label className="mb-2 block">Search</Label>
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Creator, handle, campaign, platform"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Platform</Label>
+              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All platforms" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All platforms</SelectItem>
+                  {platformOptions.map((platform) => (
+                    <SelectItem key={platform} value={platform}>
+                      {platform}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Compliance</Label>
+              <Select value={complianceFilter} onValueChange={setComplianceFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="compliant">Compliant</SelectItem>
+                  <SelectItem value="review">Needs review</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Sort By</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Most recent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most recent</SelectItem>
+                  <SelectItem value="brand_exposure">Brand exposure</SelectItem>
+                  <SelectItem value="sentiment">Sentiment</SelectItem>
+                  <SelectItem value="risk">Lowest brand safety</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Showing {filteredAnalyses.length} of {analyses.length} analyses
+            </span>
+            {(searchQuery || platformFilter !== "all" || complianceFilter !== "all" || sortBy !== "recent") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setPlatformFilter("all");
+                  setComplianceFilter("all");
+                  setSortBy("recent");
+                }}
+              >
+                Reset filters
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Analysis Results */}
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading analyses...</p>
@@ -125,7 +253,7 @@ const ContentAnalysis = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {analyses.map((a: any) => {
+          {filteredAnalyses.map((a: any) => {
             const content = a.creator_content;
             const creator = content?.campaign_creators?.creators;
             const campaign = content?.campaign_creators?.campaigns;
@@ -166,6 +294,14 @@ const ContentAnalysis = () => {
             );
           })}
         </div>
+      )}
+      {!isLoading && analyses.length > 0 && filteredAnalyses.length === 0 && (
+        <Card className="p-12 text-center">
+          <p className="text-sm font-medium">No analyses match your filters</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Try a broader search or reset the current filters.
+          </p>
+        </Card>
       )}
 
       {/* Analyze Dialog */}
