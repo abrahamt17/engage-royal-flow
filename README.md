@@ -76,7 +76,7 @@ supabase db push              # apply migrations
 # OR manually run: database/schema.sql then database/seed.sql
 
 # 5. Edge Function secrets
-supabase secrets set LOVABLE_API_KEY=<your-ai-key>
+supabase secrets set OPENAI_API_KEY=<your-ai-key>
 supabase secrets set PAYPAL_CLIENT_ID=<your-paypal-id>
 supabase secrets set PAYPAL_CLIENT_SECRET=<your-paypal-secret>
 
@@ -161,7 +161,7 @@ npm run dev
 |----------|-------|---------|
 | `VITE_SUPABASE_URL` | `.env` | Frontend Supabase URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` | Frontend anon key |
-| `LOVABLE_API_KEY` | Supabase secrets | AI Gateway auth |
+| `OPENAI_API_KEY` | Supabase secrets | AI features |
 | `PAYPAL_CLIENT_ID` | Supabase secrets | PayPal payouts |
 | `PAYPAL_CLIENT_SECRET` | Supabase secrets | PayPal payouts |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase secrets (auto) | Admin operations |
