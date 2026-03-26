@@ -24,6 +24,25 @@ function getErrorMessage(error: unknown): string {
   return "Unexpected error";
 }
 
+function clampScore(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, numeric));
+}
+
+function normalizeNumber(value: unknown): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function normalizeFindings(findings: unknown): string[] {
+  if (!Array.isArray(findings)) return [];
+  return findings
+    .map((finding) => String(finding).trim())
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -135,22 +154,42 @@ Analyze comprehensively. Return ONLY the JSON object, no other text.`;
     
     const analysis = JSON.parse(jsonStr.trim()) as ContentAnalysis;
 
-    // Store analysis
-    const { data: stored, error: storeErr } = await supabaseClient
+    const normalizedAnalysis = {
+      brand_exposure_score: clampScore(analysis.brand_exposure_score),
+      sentiment_score: clampScore(analysis.sentiment_score),
+      ad_compliance_score: clampScore(analysis.ad_compliance_score),
+      content_quality_score: clampScore(analysis.content_quality_score),
+      brand_safety_score: clampScore(analysis.brand_safety_score),
+      product_visibility: Boolean(analysis.product_visibility),
+      brand_logo_seconds: Math.max(0, normalizeNumber(analysis.brand_logo_seconds)),
+      verbal_mentions: Math.max(0, Math.round(normalizeNumber(analysis.verbal_mentions))),
+      key_findings: normalizeFindings(analysis.key_findings),
+      model_used: "gpt-4o-mini",
+      analyzed_at: new Date().toISOString(),
+    };
+
+    const { data: existingAnalysis } = await supabaseClient
       .from("content_analysis")
-      .insert({
-        content_id,
-        brand_exposure_score: analysis.brand_exposure_score || 0,
-        sentiment_score: analysis.sentiment_score || 0,
-        ad_compliance_score: analysis.ad_compliance_score || 0,
-        content_quality_score: analysis.content_quality_score || 0,
-        brand_safety_score: analysis.brand_safety_score || 0,
-        product_visibility: analysis.product_visibility || false,
-        brand_logo_seconds: analysis.brand_logo_seconds || 0,
-        verbal_mentions: analysis.verbal_mentions || 0,
-        key_findings: analysis.key_findings || [],
-        model_used: "gpt-4o-mini",
-      })
+      .select("id")
+      .eq("content_id", content_id)
+      .order("analyzed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const analysisMutation = existingAnalysis
+      ? supabaseClient
+          .from("content_analysis")
+          .update(normalizedAnalysis)
+          .eq("id", existingAnalysis.id)
+      : supabaseClient
+          .from("content_analysis")
+          .insert({
+            content_id,
+            ...normalizedAnalysis,
+          });
+
+    // Store analysis
+    const { data: stored, error: storeErr } = await analysisMutation
       .select()
       .single();
 
