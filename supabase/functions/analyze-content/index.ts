@@ -7,16 +7,36 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface ContentAnalysis {
+  brand_exposure_score?: number;
+  sentiment_score?: number;
+  ad_compliance_score?: number;
+  content_quality_score?: number;
+  brand_safety_score?: number;
+  product_visibility?: boolean;
+  brand_logo_seconds?: number;
+  verbal_mentions?: number;
+  key_findings?: string[];
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Unexpected error";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+      authHeader
+        ? { global: { headers: { Authorization: authHeader } } }
+        : undefined
     );
 
     const { content_id, description } = await req.json();
@@ -100,15 +120,20 @@ Analyze comprehensively. Return ONLY the JSON object, no other text.`;
       throw new Error("AI analysis failed");
     }
 
-    const aiData = await aiResponse.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || "{}";
+    const aiData = await aiResponse.json() as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const rawContent = aiData.choices?.[0]?.message?.content;
+    if (!rawContent) {
+      throw new Error("AI response did not include analysis content");
+    }
     
     // Extract JSON from response (handle markdown code blocks)
     let jsonStr = rawContent;
     const jsonMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) jsonStr = jsonMatch[1];
     
-    const analysis = JSON.parse(jsonStr.trim());
+    const analysis = JSON.parse(jsonStr.trim()) as ContentAnalysis;
 
     // Store analysis
     const { data: stored, error: storeErr } = await supabaseClient
@@ -136,7 +161,7 @@ Analyze comprehensively. Return ONLY the JSON object, no other text.`;
     });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: getErrorMessage(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
