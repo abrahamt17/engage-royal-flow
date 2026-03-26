@@ -13,6 +13,7 @@ import { Eye, Brain, Shield, Smile, Volume2, CheckCircle, Sparkles, Loader2 } fr
 import { useAllContentAnalyses } from "@/hooks/useMarketplaceData";
 import { useCreatorContent } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/lib/csvExport";
 import { toast } from "sonner";
 
 const ContentAnalysis = () => {
@@ -109,14 +110,64 @@ const ContentAnalysis = () => {
       return new Date(right.analyzed_at || 0).getTime() - new Date(left.analyzed_at || 0).getTime();
     });
 
+  const averageExposure =
+    filteredAnalyses.length > 0
+      ? filteredAnalyses.reduce((sum: number, analysis: any) => sum + (analysis.brand_exposure_score || 0), 0) / filteredAnalyses.length
+      : 0;
+  const averageMentions =
+    filteredAnalyses.length > 0
+      ? filteredAnalyses.reduce((sum: number, analysis: any) => sum + (analysis.verbal_mentions || 0), 0) / filteredAnalyses.length
+      : 0;
+  const visibleProductCount = filteredAnalyses.filter((analysis: any) => analysis.product_visibility).length;
+  const reviewCount = filteredAnalyses.filter((analysis: any) => (analysis.ad_compliance_score || 0) < 70).length;
+
+  const handleExport = () => {
+    if (filteredAnalyses.length === 0) {
+      toast.error("No analyses available to export");
+      return;
+    }
+
+    const exportRows = filteredAnalyses.map((analysis: any) => {
+      const content = analysis.creator_content;
+      const creator = content?.campaign_creators?.creators;
+      const campaign = content?.campaign_creators?.campaigns;
+
+      return {
+        analyzed_at: analysis.analyzed_at,
+        creator_name: creator?.name ?? "",
+        creator_handle: creator?.handle ?? "",
+        campaign_name: campaign?.name ?? "",
+        platform: content?.platform ?? "",
+        views: content?.views ?? 0,
+        brand_exposure_score: analysis.brand_exposure_score ?? 0,
+        sentiment_score: analysis.sentiment_score ?? 0,
+        ad_compliance_score: analysis.ad_compliance_score ?? 0,
+        content_quality_score: analysis.content_quality_score ?? 0,
+        brand_safety_score: analysis.brand_safety_score ?? 0,
+        product_visibility: analysis.product_visibility ? "yes" : "no",
+        brand_logo_seconds: analysis.brand_logo_seconds ?? 0,
+        verbal_mentions: analysis.verbal_mentions ?? 0,
+        key_findings: Array.isArray(analysis.key_findings) ? analysis.key_findings.join(" | ") : "",
+      };
+    });
+
+    exportToCSV(exportRows, `content-analysis-${new Date().toISOString().split("T")[0]}`);
+    toast.success(`Exported ${exportRows.length} analysis record(s)`);
+  };
+
   return (
     <DashboardLayout
       title="AI Content Analysis"
       subtitle="AI-powered video and content quality analysis"
       action={
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Sparkles className="h-4 w-4 mr-2" /> Analyze Content
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredAnalyses.length === 0}>
+            <Volume2 className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Sparkles className="h-4 w-4 mr-2" /> Analyze Content
+          </Button>
+        </div>
       }
     >
       {/* Summary Stats */}
@@ -241,6 +292,45 @@ const ContentAnalysis = () => {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Avg Exposure</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-blue-500">{averageExposure.toFixed(0)}</p>
+            <p className="text-xs text-muted-foreground">Across the current filtered set</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Avg Mentions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-emerald-500">{averageMentions.toFixed(1)}</p>
+            <p className="text-xs text-muted-foreground">Estimated verbal mentions per asset</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Product Visible</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-violet-500">{visibleProductCount}</p>
+            <p className="text-xs text-muted-foreground">Assets with clear product visibility</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Needs Review</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-amber-500">{reviewCount}</p>
+            <p className="text-xs text-muted-foreground">Filtered analyses below compliance target</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Analysis Results */}
       {isLoading ? (
