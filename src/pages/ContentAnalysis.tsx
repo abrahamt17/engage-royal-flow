@@ -155,6 +155,10 @@ const ContentAnalysis = () => {
     toast.success(`Exported ${exportRows.length} analysis record(s)`);
   };
 
+  const analyzedContentIds = new Set(analyses.map((analysis: any) => analysis.content_id));
+  const selectedContent = contentList.find((content: any) => content.id === selectedContentId);
+  const selectedContentAlreadyAnalyzed = selectedContent ? analyzedContentIds.has(selectedContent.id) : false;
+
   return (
     <DashboardLayout
       title="AI Content Analysis"
@@ -406,12 +410,50 @@ const ContentAnalysis = () => {
                 <SelectContent>
                   {contentList.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.campaign_creators?.creators?.name ?? "Creator"} — {c.platform} ({c.views?.toLocaleString() ?? 0} views)
+                      {c.campaign_creators?.creators?.name ?? "Creator"} — {c.platform} ({c.views?.toLocaleString() ?? 0} views){analyzedContentIds.has(c.id) ? " • refresh analysis" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            {selectedContent && (
+              <Card className="border-dashed">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {selectedContent.campaign_creators?.creators?.name ?? "Creator"} · {selectedContent.platform}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedContent.campaign_creators?.campaigns?.name ?? "Campaign"} · {selectedContent.views?.toLocaleString() ?? 0} views
+                      </p>
+                    </div>
+                    <Badge variant={selectedContentAlreadyAnalyzed ? "secondary" : "default"}>
+                      {selectedContentAlreadyAnalyzed ? "Existing analysis" : "New analysis"}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-sm font-bold">{selectedContent.likes?.toLocaleString() ?? 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Likes</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{selectedContent.comments?.toLocaleString() ?? 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Comments</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{selectedContent.watch_time_pct ?? 0}%</p>
+                      <p className="text-[10px] text-muted-foreground">Watch Time</p>
+                    </div>
+                  </div>
+                  {selectedContent.content_url && (
+                    <p className="text-xs text-muted-foreground break-all">
+                      Source URL: {selectedContent.content_url}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
             <div>
               <Label>Content Description (optional)</Label>
               <Textarea
@@ -422,7 +464,7 @@ const ContentAnalysis = () => {
               />
             </div>
             <Button onClick={handleAnalyze} disabled={analyzing || !selectedContentId} className="w-full">
-              {analyzing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing...</> : <><Sparkles className="h-4 w-4 mr-2" /> Run AI Analysis</>}
+              {analyzing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing...</> : <><Sparkles className="h-4 w-4 mr-2" /> {selectedContentAlreadyAnalyzed ? "Refresh AI Analysis" : "Run AI Analysis"}</>}
             </Button>
           </div>
         </DialogContent>
@@ -434,6 +476,19 @@ const ContentAnalysis = () => {
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Analysis Details</DialogTitle></DialogHeader>
             <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">
+                    {selectedAnalysis.creator_content?.campaign_creators?.creators?.name ?? "Unknown Creator"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedAnalysis.creator_content?.campaign_creators?.campaigns?.name ?? "Campaign"} · {selectedAnalysis.creator_content?.platform ?? "Unknown platform"}
+                  </p>
+                </div>
+                <Badge variant="outline">
+                  {selectedAnalysis.analyzed_at ? new Date(selectedAnalysis.analyzed_at).toLocaleDateString() : "Recent"}
+                </Badge>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <Card><CardContent className="p-3 text-center">
                   <p className="text-xl font-bold text-blue-500">{selectedAnalysis.brand_exposure_score}</p>
@@ -468,6 +523,14 @@ const ContentAnalysis = () => {
                   </div>
                 </div>
               </CardContent></Card>
+              {selectedAnalysis.creator_content?.content_url && (
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-[10px] text-muted-foreground mb-1">Content URL</p>
+                    <p className="text-xs break-all">{selectedAnalysis.creator_content.content_url}</p>
+                  </CardContent>
+                </Card>
+              )}
               {Array.isArray(selectedAnalysis.key_findings) && selectedAnalysis.key_findings.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold mb-2">All Findings</p>
