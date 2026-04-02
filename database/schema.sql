@@ -421,7 +421,10 @@ CREATE POLICY "Users manage own brand" ON public.brands FOR ALL USING (auth.uid(
 
 -- Creators: public read
 DROP POLICY IF EXISTS "Creators readable by authenticated" ON public.creators;
+DROP POLICY IF EXISTS "Authenticated users can create creators" ON public.creators;
 CREATE POLICY "Creators readable by authenticated" ON public.creators FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can create creators" ON public.creators FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+GRANT INSERT ON TABLE public.creators TO authenticated;
 
 -- Campaigns: brand owner
 DROP POLICY IF EXISTS "Brands manage own campaigns" ON public.campaigns;

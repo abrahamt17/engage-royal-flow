@@ -32,25 +32,20 @@ const CreatorOnboarding = () => {
 
   const createCreator = useMutation({
     mutationFn: async () => {
-      // Use service role via edge function since creators table doesn't allow INSERT for authenticated users
-      const { error } = await supabase.functions.invoke("manage-creators", {
-        body: {
-          action: "create",
-          creator: {
-            name,
-            handle,
-            platforms,
-            category: category || null,
-            follower_count: parseInt(followerCount) || 0,
-            avg_engagement_rate: parseFloat(engagementRate) || 0,
-            audience_demographics: {
-              age_range: ageRange,
-              top_countries: topCountries.split(",").map((c) => c.trim()),
-              gender_split: gender,
-            },
-          },
+      const { error } = await supabase.from("creators").insert({
+        name,
+        handle,
+        platforms,
+        category: category || null,
+        follower_count: parseInt(followerCount) || 0,
+        avg_engagement_rate: parseFloat(engagementRate) || 0,
+        audience_demographics: {
+          age_range: ageRange,
+          top_countries: topCountries.split(",").map((c) => c.trim()).filter(Boolean),
+          gender_split: gender,
         },
       });
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -58,7 +53,9 @@ const CreatorOnboarding = () => {
       toast.success("Creator onboarded successfully!");
       resetForm();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: { message?: string }) => {
+      toast.error(e.message ?? "Failed to onboard creator");
+    },
   });
 
   const resetForm = () => {
