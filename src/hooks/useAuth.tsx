@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,6 +20,20 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+const clearStoredAuth = () => {
+  const keysToRemove: string[] = [];
+
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+
+    if (key?.startsWith("sb-")) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+};
 
 async function fetchOrCreateBrand(userId: string, email?: string): Promise<string | null> {
   try {
@@ -60,7 +73,6 @@ async function fetchOrCreateBrand(userId: string, email?: string): Promise<strin
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,18 +86,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    const syncSession = async (session: Session | null) => {
+    const syncSession = (session: Session | null) => {
       if (!mounted) return;
 
       setSession(session);
       setUser(session?.user ?? null);
-
-      if (session?.user) {
-        const id = await fetchOrCreateBrand(session.user.id, session.user.email ?? undefined);
-        if (mounted) setBrandId(id);
-      } else {
-        setBrandId(null);
-      }
+      setBrandId(null);
 
       if (mounted) setLoading(false);
     };
@@ -99,8 +105,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        await syncSession(session);
+      (_event, session) => {
+        syncSession(session);
       }
     );
 
@@ -116,22 +122,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    if (!user) {
+      setBrandId(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    void (async () => {
+      const id = await fetchOrCreateBrand(user.id, user.email ?? undefined);
+
+      if (active) {
+        setBrandId(id);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
   const signOut = async () => {
+    let signOutError: unknown = null;
+
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: "local" });
 
       if (error) {
         throw error;
       }
-
+    } catch (error) {
+      signOutError = error;
+      console.error("Sign out error:", error);
+    } finally {
+      clearStoredAuth();
       setSession(null);
       setUser(null);
       setBrandId(null);
       setLoading(false);
-      navigate("/auth", { replace: true });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to sign out";
-      console.error("Sign out error:", error);
+
+      if (window.location.pathname !== "/auth") {
+        window.location.replace("/auth");
+      }
+    }
+
+    if (signOutError) {
+      const message = signOutError instanceof Error ? signOutError.message : "Signed out locally, but Supabase sign-out reported an error";
       toast.error(message);
     }
   };
