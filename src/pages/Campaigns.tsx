@@ -31,7 +31,7 @@ import { toast } from "sonner";
 const platformOptions = ["TikTok", "Instagram", "YouTube", "X / Twitter", "Twitch"];
 
 const Campaigns = () => {
-  const { brandId } = useAuth();
+  const { brandId, loading } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -52,7 +52,7 @@ const Campaigns = () => {
 
   const createCampaign = useMutation({
     mutationFn: async () => {
-      if (!brandId) throw new Error("No brand");
+      if (!brandId) throw new Error("Your brand profile is still loading. Please try again in a moment.");
       const budgetAmount = parseFloat(budget) || 0;
       const { data: campaignData, error } = await supabase.from("campaigns").insert({
         brand_id: brandId,
@@ -120,7 +120,7 @@ const Campaigns = () => {
       <div className="flex justify-end mb-6">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2" disabled={loading}>
               <Plus className="h-4 w-4" />
               New Campaign
             </Button>
@@ -257,7 +257,7 @@ const Campaigns = () => {
               </div>
 
               <Button type="submit" className="w-full" disabled={createCampaign.isPending}>
-                {createCampaign.isPending ? "Creating..." : "Create Campaign"}
+                {createCampaign.isPending ? "Creating..." : !brandId ? "Waiting for Brand..." : "Create Campaign"}
               </Button>
             </form>
           </DialogContent>
