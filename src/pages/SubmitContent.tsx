@@ -1,4 +1,4 @@
-import { useState } from "react";
++import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaignCreators } from "@/hooks/useData";
@@ -11,7 +11,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
+import { CheckCircle, AlertCircle, TrendingUp, Wand2 } from "lucide-react";
+
+type ImportMetricsResult = {
+  success: boolean;
+  platform: string;
+  importStatus: "complete" | "partial" | "manual_required";
+  metrics?: {
+    views?: number;
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    saves?: number;
+    watch_time_pct?: number;
+  };
+  metadata?: {
+    title?: string;
+    author_name?: string;
+    thumbnail_url?: string;
+    published_at?: string;
+    external_id?: string;
+  };
+  message?: string;
+};
 
 const SubmitContent = () => {
   const queryClient = useQueryClient();
@@ -26,8 +48,10 @@ const SubmitContent = () => {
   const [shares, setShares] = useState("");
   const [saves, setSaves] = useState("");
   const [watchTime, setWatchTime] = useState("");
+  const [importedMetadata, setImportedMetadata] = useState<ImportMetricsResult["metadata"] | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [calculatedPayout, setCalculatedPayout] = useState<any>(null);
 
@@ -102,6 +126,49 @@ const SubmitContent = () => {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      setIsImporting(true);
+      const { data, error } = await supabase.functions.invoke("import-content-metrics", {
+        body: {
+          content_url: contentUrl,
+        },
+      });
+      if (error) throw error;
+      return data as ImportMetricsResult;
+    },
+    onSuccess: (data) => {
+      if (data.platform && data.platform !== "Unknown") {
+        setPlatform(data.platform);
+      }
+
+      if (data.metrics) {
+        if (data.metrics.views != null) setViews(String(data.metrics.views));
+        if (data.metrics.likes != null) setLikes(String(data.metrics.likes));
+        if (data.metrics.comments != null) setComments(String(data.metrics.comments));
+        if (data.metrics.shares != null) setShares(String(data.metrics.shares));
+        if (data.metrics.saves != null) setSaves(String(data.metrics.saves));
+        if (data.metrics.watch_time_pct != null) setWatchTime(String(data.metrics.watch_time_pct));
+      }
+
+      setImportedMetadata(data.metadata ?? null);
+
+      if (data.importStatus === "complete") {
+        toast.success(data.message ?? "Metrics imported successfully.");
+      } else if (data.importStatus === "partial") {
+        toast.info(data.message ?? "Imported what was available. Fill in the rest manually.");
+      } else {
+        toast.warning(data.message ?? "Automatic import is not available for this URL yet.");
+      }
+    },
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? "Failed to import metrics");
+    },
+    onSettled: () => {
+      setIsImporting(false);
+    },
+  });
+
   const resetForm = () => {
     setAssignmentId("");
     setPlatform("TikTok");
@@ -112,6 +179,7 @@ const SubmitContent = () => {
     setShares("");
     setSaves("");
     setWatchTime("");
+    setImportedMetadata(null);
     setShowPreview(false);
     setCalculatedPayout(null);
   };
@@ -183,10 +251,36 @@ const SubmitContent = () => {
                     </div>
                   </div>
 
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => importMutation.mutate()}
+                      disabled={!contentUrl || isImporting}
+                    >
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      {isImporting ? "Importing..." : "Import From URL"}
+                    </Button>
+                    <div className="text-xs text-muted-foreground flex items-center">
+                      Detect platform and autofill what the backend can fetch. Manual entry still works.
+                    </div>
+                  </div>
+
+                  {importedMetadata && (
+                    <Alert>
+                      <AlertDescription className="text-xs space-y-1">
+                        {importedMetadata.title && <div>Title: {importedMetadata.title}</div>}
+                        {importedMetadata.author_name && <div>Author: {importedMetadata.author_name}</div>}
+                        {importedMetadata.published_at && <div>Published: {new Date(importedMetadata.published_at).toLocaleDateString()}</div>}
+                        {importedMetadata.external_id && <div>External ID: {importedMetadata.external_id}</div>}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      Required fields: Views, Likes, Watch Time %. Optional: Comments, Shares, Saves
+                      Required fields: Views, Likes, Watch Time %. Optional: Comments, Shares, Saves. URL import can prefill some fields when supported.
                     </AlertDescription>
                   </Alert>
 
