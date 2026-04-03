@@ -57,3 +57,10 @@ supabase/.temp/
 *.png
 *.jpg
 *.jpeg
+
+supabase/.temp/
+.codex
+.env
+.env.*
+!.env.example
+
