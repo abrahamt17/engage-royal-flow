@@ -22,15 +22,22 @@ export const useAuth = () => useContext(AuthContext);
 
 async function fetchOrCreateBrand(userId: string, email?: string): Promise<string | null> {
   try {
-    const { data: brand } = await supabase
+    const { data: brands, error: brandError } = await supabase
       .from("brands")
-      .select("id")
+      .select("id, created_at")
       .eq("user_id", userId)
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
 
-    if (brand) return brand.id;
+    if (brandError) {
+      throw brandError;
+    }
 
-    const { data: newBrand } = await supabase
+    if (brands && brands.length > 0) {
+      return brands[0].id;
+    }
+
+    const { data: newBrand, error: insertError } = await supabase
       .from("brands")
       .insert({
         user_id: userId,
@@ -38,6 +45,10 @@ async function fetchOrCreateBrand(userId: string, email?: string): Promise<strin
       })
       .select("id")
       .single();
+
+    if (insertError) {
+      throw insertError;
+    }
 
     return newBrand?.id ?? null;
   } catch (err) {
@@ -60,6 +71,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    const syncSession = async (session: Session | null) => {
+      if (!mounted) return;
+
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const id = await fetchOrCreateBrand(session.user.id, session.user.email ?? undefined);
+        if (mounted) setBrandId(id);
+      } else {
+        setBrandId(null);
+      }
+
+      if (mounted) setLoading(false);
+    };
+
     // Safety timeout - never stay loading more than 5s
     const timeout = setTimeout(() => {
       if (mounted && loadingRef.current) {
@@ -70,23 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (!mounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          const id = await fetchOrCreateBrand(session.user.id, session.user.email ?? undefined);
-          if (mounted) setBrandId(id);
-        } else {
-          setBrandId(null);
-        }
-        if (mounted) setLoading(false);
+        await syncSession(session);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      if (!session) setLoading(false);
+      void syncSession(session);
     });
 
     return () => {
