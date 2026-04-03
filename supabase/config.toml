@@ -1,4 +1,5 @@
-expproject_id = "pbnfonrtxpfvmktsbind"
+project_id = "pbnfonrtxpfvmktsbind"
+
 
 [functions.submit-metrics]
 verify_jwt = false
@@ -28,4 +29,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.public-api]
+verify_jwt = false
+
+[functions.import-content-metrics]
 verify_jwt = false
