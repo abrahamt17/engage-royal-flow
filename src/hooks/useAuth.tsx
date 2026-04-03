@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
@@ -58,6 +59,7 @@ async function fetchOrCreateBrand(userId: string, email?: string): Promise<strin
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
+
+    setSession(null);
+    setUser(null);
+    setBrandId(null);
+    setLoading(false);
+    navigate("/auth", { replace: true });
   };
 
   return (
