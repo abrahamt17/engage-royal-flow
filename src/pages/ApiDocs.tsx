@@ -12,7 +12,7 @@ const ApiDocs = () => {
   const endpoints = [
     { method: "GET", path: "/campaigns", desc: "List campaigns visible to the signed-in user", params: "limit, offset" },
     { method: "GET", path: "/campaigns/:id", desc: "Get one campaign visible to the signed-in user", params: "—" },
-    { method: "GET", path: "/creators", desc: "List creators with optional directory filters", params: "limit, offset, category, platform, min_engagement" },
+    { method: "GET", path: "/creators", desc: "List creator with optional directory filters", params: "limit, offset, category, platform, min_engagement" },
     { method: "GET", path: "/creators/:id", desc: "Get a creator profile", params: "—" },
     { method: "GET", path: "/payroll", desc: "List payroll entries visible to the signed-in user", params: "limit, offset" },
     { method: "GET", path: "/analytics", desc: "Get summary analytics for the signed-in user context", params: "—" },
