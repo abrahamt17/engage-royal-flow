@@ -35,6 +35,28 @@ type ImportMetricsResult = {
   message?: string;
 };
 
+type SubmitMetricsResult = {
+  success: boolean;
+  payroll?: {
+    base_pay: number;
+    perf_score: number;
+    match_score: number;
+    multiplier: number;
+    bonus: number;
+    total_payment: number;
+    currency: string;
+  };
+  audienceMatch?: {
+    score: number;
+    components: Array<{
+      key: string;
+      label: string;
+      weight: number;
+      score: number | null;
+    }>;
+  };
+};
+
 const SubmitContent = () => {
   const queryClient = useQueryClient();
   const { data: assignments = [] } = useCampaignCreators();
@@ -54,6 +76,7 @@ const SubmitContent = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [calculatedPayout, setCalculatedPayout] = useState<any>(null);
+  const [lastSubmission, setLastSubmission] = useState<SubmitMetricsResult | null>(null);
 
   const selectedAssignment = assignments.find((a: any) => a.id === assignmentId);
 
@@ -109,9 +132,10 @@ const SubmitContent = () => {
         },
       });
       if (error) throw error;
-      return data;
+      return data as SubmitMetricsResult;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setLastSubmission(data);
       toast.success("Content submitted! Payroll calculated automatically.");
       queryClient.invalidateQueries({ queryKey: ["campaign_creators"] });
       queryClient.invalidateQueries({ queryKey: ["creator_content"] });
@@ -275,6 +299,69 @@ const SubmitContent = () => {
                         {importedMetadata.external_id && <div>External ID: {importedMetadata.external_id}</div>}
                       </AlertDescription>
                     </Alert>
+                  )}
+
+                  {lastSubmission?.payroll && (
+                    <Card className="border-primary/20 bg-primary/5">
+                      <CardHeader>
+                        <CardTitle className="text-sm">Latest Payroll Result</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Base Pay</p>
+                            <p className="font-semibold">${lastSubmission.payroll.base_pay.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Performance</p>
+                            <p className="font-semibold">{lastSubmission.payroll.perf_score.toFixed(1)}%</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Audience Match</p>
+                            <p className="font-semibold">{lastSubmission.payroll.match_score.toFixed(1)}%</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Bonus</p>
+                            <p className="font-semibold">${lastSubmission.payroll.bonus.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Total</p>
+                            <p className="font-semibold text-primary">
+                              ${lastSubmission.payroll.total_payment.toFixed(2)} {lastSubmission.payroll.currency}
+                            </p>
+                          </div>
+                        </div>
+
+                        {lastSubmission.audienceMatch && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">Audience Match Breakdown</p>
+                              <Badge variant="outline">
+                                {Math.round(lastSubmission.audienceMatch.score * 100)}% overall
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {lastSubmission.audienceMatch.components.map((component) => (
+                                <div
+                                  key={component.key}
+                                  className="rounded-md border border-border/60 bg-background/80 px-3 py-2 text-xs"
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="font-medium">{component.label}</span>
+                                    <span className="text-muted-foreground">
+                                      {component.score == null ? "No data" : `${component.score.toFixed(1)}%`}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-[11px] text-muted-foreground">
+                                    Weight: {Math.round(component.weight * 100)}%
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   )}
 
                   <Alert>

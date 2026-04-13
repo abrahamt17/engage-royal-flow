@@ -147,7 +147,7 @@ const calculateCategoryScore = (campaignInterests: unknown, creatorCategory: unk
     : 0.35;
 };
 
-const calculateAudienceMatchScore = ({
+const calculateAudienceMatchDetails = ({
   targetAudience,
   creatorDemographics,
   creatorCategory,
@@ -163,16 +163,22 @@ const calculateAudienceMatchScore = ({
   const campaignAudience = isRecord(targetAudience) ? targetAudience : {};
   const creatorAudience = isRecord(creatorDemographics) ? creatorDemographics : {};
 
-  const scoreParts: Array<{ score: number | null; weight: number }> = [
+  const components = [
     {
+      key: "age",
+      label: "Age",
       score: calculateAgeScore(campaignAudience.age_range, creatorAudience.age_range),
       weight: 0.3,
     },
     {
+      key: "gender",
+      label: "Gender",
       score: calculateGenderScore(campaignAudience.genders ?? campaignAudience.gender, creatorAudience.gender_split ?? creatorAudience.gender),
       weight: 0.2,
     },
     {
+      key: "country",
+      label: "Country",
       score: calculateCountryScore(
         campaignAudience.countries ?? campaignAudience.country,
         creatorAudience.top_countries ?? creatorAudience.countries ?? creatorAudience.country,
@@ -181,25 +187,43 @@ const calculateAudienceMatchScore = ({
       weight: 0.2,
     },
     {
+      key: "language",
+      label: "Language",
       score: calculateLanguageScore(campaignAudience.languages ?? campaignAudience.language, creatorLanguages),
       weight: 0.15,
     },
     {
+      key: "category",
+      label: "Category",
       score: calculateCategoryScore(campaignAudience.interests ?? campaignAudience.categories, creatorCategory),
       weight: 0.15,
     },
   ];
 
-  const availableParts = scoreParts.filter((part) => part.score !== null) as Array<{ score: number; weight: number }>;
+  const weighted = components.filter((component) => component.score !== null) as Array<{
+    key: string;
+    label: string;
+    score: number;
+    weight: number;
+  }>;
 
-  if (availableParts.length === 0) {
-    return 0.7;
-  }
+  const score =
+    weighted.length === 0
+      ? 0.7
+      : clamp(
+          weighted.reduce((sum, component) => sum + component.score * component.weight, 0) /
+            weighted.reduce((sum, component) => sum + component.weight, 0),
+        );
 
-  const weightedTotal = availableParts.reduce((sum, part) => sum + part.score * part.weight, 0);
-  const totalWeight = availableParts.reduce((sum, part) => sum + part.weight, 0);
-
-  return clamp(weightedTotal / totalWeight);
+  return {
+    score,
+    components: components.map((component) => ({
+      key: component.key,
+      label: component.label,
+      weight: component.weight,
+      score: component.score === null ? null : Number((component.score * 100).toFixed(1)),
+    })),
+  };
 };
 
 Deno.serve(async (req) => {
@@ -281,13 +305,14 @@ Deno.serve(async (req) => {
     ));
 
     // === AUDIENCE MATCH SCORE ===
-    const matchScore = calculateAudienceMatchScore({
+    const audienceMatch = calculateAudienceMatchDetails({
       targetAudience: campaign.target_audience,
       creatorDemographics: creator?.audience_demographics,
       creatorCategory: creator?.category,
       creatorLanguages: creator?.languages,
       creatorLocation: creator?.location,
     });
+    const matchScore = audienceMatch.score;
 
     // === BONUS SYSTEM ===
     const multiplier = formula.performance_multiplier || 1.0;
@@ -356,6 +381,7 @@ Deno.serve(async (req) => {
       success: true, 
       content, 
       payroll,
+      audienceMatch,
       bonusBreakdown: {
         conversionBonus: formula.conversion_bonus || 0,
         milestoneBonus: v >= 1000000 ? basePay * 0.5 : v >= 500000 ? basePay * 0.25 : v >= 100000 ? basePay * 0.10 : 0,
