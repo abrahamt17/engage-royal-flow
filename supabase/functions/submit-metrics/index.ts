@@ -7,6 +7,201 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type JsonRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is JsonRecord =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+
+const toStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const normalizeToken = (value: string) =>
+  value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ");
+
+const normalizeRange = (value: string) => {
+  const trimmed = value.trim();
+  const plusMatch = trimmed.match(/^(\d+)\+$/);
+
+  if (plusMatch) {
+    const start = Number(plusMatch[1]);
+    return Number.isFinite(start) ? { min: start, max: 100 } : null;
+  }
+
+  const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (!rangeMatch) return null;
+
+  const min = Number(rangeMatch[1]);
+  const max = Number(rangeMatch[2]);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max < min) {
+    return null;
+  }
+
+  return { min, max };
+};
+
+const calculateAgeScore = (campaignAge: unknown, creatorAge: unknown) => {
+  if (typeof campaignAge !== "string" || typeof creatorAge !== "string") {
+    return null;
+  }
+
+  const campaignRange = normalizeRange(campaignAge);
+  const creatorRange = normalizeRange(creatorAge);
+
+  if (!campaignRange || !creatorRange) {
+    return normalizeToken(campaignAge) === normalizeToken(creatorAge) ? 1 : 0.5;
+  }
+
+  const overlap = Math.max(
+    0,
+    Math.min(campaignRange.max, creatorRange.max) - Math.max(campaignRange.min, creatorRange.min),
+  );
+  const union = Math.max(campaignRange.max, creatorRange.max) - Math.min(campaignRange.min, creatorRange.min);
+
+  if (union <= 0) {
+    return 0;
+  }
+
+  return clamp(overlap / union);
+};
+
+const calculateGenderScore = (campaignGender: unknown, creatorGender: unknown) => {
+  if (typeof campaignGender !== "string" || typeof creatorGender !== "string") {
+    return null;
+  }
+
+  const campaign = normalizeToken(campaignGender);
+  const creator = normalizeToken(creatorGender);
+
+  if (campaign === "all" || campaign === "mixed") return 1;
+  if (creator === "mixed") return 0.75;
+  if (creator.includes(campaign)) return 1;
+
+  return 0.2;
+};
+
+const calculateCountryScore = (campaignCountries: unknown, creatorCountries: unknown, creatorLocation: unknown) => {
+  const campaign = toStringArray(campaignCountries).map(normalizeToken);
+  const creator = toStringArray(creatorCountries).map(normalizeToken);
+  const location = typeof creatorLocation === "string" ? normalizeToken(creatorLocation) : null;
+
+  if (campaign.length === 0) return null;
+
+  const creatorPool = new Set(creator);
+  if (location) {
+    creatorPool.add(location);
+  }
+
+  if (creatorPool.size === 0) {
+    return 0.5;
+  }
+
+  const matches = campaign.filter((country) => {
+    for (const creatorCountry of creatorPool) {
+      if (creatorCountry === country || creatorCountry.includes(country) || country.includes(creatorCountry)) {
+        return true;
+      }
+    }
+
+    return false;
+  }).length;
+
+  return clamp(matches / campaign.length);
+};
+
+const calculateLanguageScore = (campaignLanguages: unknown, creatorLanguages: unknown) => {
+  const campaign = toStringArray(campaignLanguages).map(normalizeToken);
+  const creator = new Set(toStringArray(creatorLanguages).map(normalizeToken));
+
+  if (campaign.length === 0) return null;
+  if (creator.size === 0) return 0.5;
+
+  const matches = campaign.filter((language) => creator.has(language)).length;
+  return clamp(matches / campaign.length);
+};
+
+const calculateCategoryScore = (campaignInterests: unknown, creatorCategory: unknown) => {
+  const interests = toStringArray(campaignInterests).map(normalizeToken);
+  const category = typeof creatorCategory === "string" ? normalizeToken(creatorCategory) : "";
+
+  if (interests.length === 0 || !category) return null;
+
+  return interests.some((interest) => interest === category || interest.includes(category) || category.includes(interest))
+    ? 1
+    : 0.35;
+};
+
+const calculateAudienceMatchScore = ({
+  targetAudience,
+  creatorDemographics,
+  creatorCategory,
+  creatorLanguages,
+  creatorLocation,
+}: {
+  targetAudience: unknown;
+  creatorDemographics: unknown;
+  creatorCategory: unknown;
+  creatorLanguages: unknown;
+  creatorLocation: unknown;
+}) => {
+  const campaignAudience = isRecord(targetAudience) ? targetAudience : {};
+  const creatorAudience = isRecord(creatorDemographics) ? creatorDemographics : {};
+
+  const scoreParts: Array<{ score: number | null; weight: number }> = [
+    {
+      score: calculateAgeScore(campaignAudience.age_range, creatorAudience.age_range),
+      weight: 0.3,
+    },
+    {
+      score: calculateGenderScore(campaignAudience.genders ?? campaignAudience.gender, creatorAudience.gender_split ?? creatorAudience.gender),
+      weight: 0.2,
+    },
+    {
+      score: calculateCountryScore(
+        campaignAudience.countries ?? campaignAudience.country,
+        creatorAudience.top_countries ?? creatorAudience.countries ?? creatorAudience.country,
+        creatorLocation,
+      ),
+      weight: 0.2,
+    },
+    {
+      score: calculateLanguageScore(campaignAudience.languages ?? campaignAudience.language, creatorLanguages),
+      weight: 0.15,
+    },
+    {
+      score: calculateCategoryScore(campaignAudience.interests ?? campaignAudience.categories, creatorCategory),
+      weight: 0.15,
+    },
+  ];
+
+  const availableParts = scoreParts.filter((part) => part.score !== null) as Array<{ score: number; weight: number }>;
+
+  if (availableParts.length === 0) {
+    return 0.7;
+  }
+
+  const weightedTotal = availableParts.reduce((sum, part) => sum + part.score * part.weight, 0);
+  const totalWeight = availableParts.reduce((sum, part) => sum + part.weight, 0);
+
+  return clamp(weightedTotal / totalWeight);
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -52,13 +247,14 @@ Deno.serve(async (req) => {
     // Get campaign & creator data for payroll calculation
     const { data: campaignCreator, error: ccError } = await supabaseClient
       .from("campaign_creators")
-      .select("*, campaigns(*, brands(*))")
+      .select("*, campaigns(*, brands(*)), creators(*)")
       .eq("id", campaign_creator_id)
       .single();
 
     if (ccError || !campaignCreator) throw new Error("Could not fetch campaign details");
 
     const campaign = campaignCreator.campaigns;
+    const creator = campaignCreator.creators;
     const formula = campaign.payroll_formula || { base_pay: 500, performance_multiplier: 2.5, conversion_bonus: 0 };
     
     // === PERFORMANCE SCORE (weighted) ===
@@ -85,7 +281,13 @@ Deno.serve(async (req) => {
     ));
 
     // === AUDIENCE MATCH SCORE ===
-    const matchScore = 1.0; // Default — enhanced when audience data available
+    const matchScore = calculateAudienceMatchScore({
+      targetAudience: campaign.target_audience,
+      creatorDemographics: creator?.audience_demographics,
+      creatorCategory: creator?.category,
+      creatorLanguages: creator?.languages,
+      creatorLocation: creator?.location,
+    });
 
     // === BONUS SYSTEM ===
     const multiplier = formula.performance_multiplier || 1.0;
