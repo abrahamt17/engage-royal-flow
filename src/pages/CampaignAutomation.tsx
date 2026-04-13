@@ -49,7 +49,7 @@ const CampaignAutomation = () => {
         },
       });
       if (error) throw error;
-      toast.success("Automation created and running!");
+      toast.success("Automation process created and running!");
       refetch();
       setDialogOpen(false);
     } catch (e: any) {
