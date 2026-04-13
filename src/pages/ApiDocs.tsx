@@ -1,7 +1,6 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Code, Copy, Check, Globe, Key, Zap } from "lucide-react";
 import { useState } from "react";
@@ -11,14 +10,14 @@ const ApiDocs = () => {
   const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-api/v1`;
 
   const endpoints = [
-    { method: "GET", path: "/campaigns", desc: "List all campaigns", params: "limit, offset" },
-    { method: "GET", path: "/campaigns/:id", desc: "Get campaign by ID", params: "—" },
-    { method: "GET", path: "/creators", desc: "List creators (filterable)", params: "limit, offset, category, platform, min_engagement" },
-    { method: "GET", path: "/creators/:id", desc: "Get creator by ID", params: "—" },
-    { method: "GET", path: "/payroll", desc: "List payroll entries", params: "limit, offset" },
-    { method: "GET", path: "/analytics", desc: "Get analytics summary", params: "—" },
+    { method: "GET", path: "/campaigns", desc: "List campaigns visible to the signed-in user", params: "limit, offset" },
+    { method: "GET", path: "/campaigns/:id", desc: "Get one campaign visible to the signed-in user", params: "—" },
+    { method: "GET", path: "/creators", desc: "List creators with optional directory filters", params: "limit, offset, category, platform, min_engagement" },
+    { method: "GET", path: "/creators/:id", desc: "Get a creator profile", params: "—" },
+    { method: "GET", path: "/payroll", desc: "List payroll entries visible to the signed-in user", params: "limit, offset" },
+    { method: "GET", path: "/analytics", desc: "Get summary analytics for the signed-in user context", params: "—" },
     { method: "GET", path: "/fraud", desc: "Get fraud risk data", params: "limit, offset" },
-    { method: "GET", path: "/benchmarks", desc: "Get industry benchmarks", params: "limit, offset" },
+    { method: "GET", path: "/benchmarks", desc: "Get benchmark catalog entries", params: "limit, offset" },
   ];
 
   const copyUrl = (path: string) => {
@@ -32,7 +31,7 @@ const response = await fetch(
   '${baseUrl}/creators?limit=10&category=Tech',
   {
     headers: {
-      'Authorization': 'Bearer YOUR_API_KEY',
+      'Authorization': 'Bearer USER_ACCESS_TOKEN',
       'apikey': 'YOUR_ANON_KEY',
       'Content-Type': 'application/json',
     },
@@ -42,7 +41,7 @@ const { data } = await response.json();
 console.log(data);`;
 
   return (
-    <DashboardLayout title="API Documentation" subtitle="REST API for external platform integrations">
+    <DashboardLayout title="API Documentation" subtitle="Authenticated REST API for CreatorPay account data">
       {/* Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <Card>
@@ -60,7 +59,7 @@ console.log(data);`;
               <Key className="h-4 w-4 text-amber-500" />
               <span className="text-xs text-muted-foreground">Authentication</span>
             </div>
-            <p className="text-xs">Bearer token via <code className="bg-muted px-1 rounded">Authorization</code> header</p>
+            <p className="text-xs">Signed-in user bearer token via <code className="bg-muted px-1 rounded">Authorization</code> header</p>
           </CardContent>
         </Card>
         <Card>
@@ -139,12 +138,20 @@ console.log(data);`;
 {`{
   "data": [...],           // Array or Object
   "meta": {
-    "limit": 50,
-    "offset": 0,
-    "resource": "creators"
+    "version": "v1",
+    "resource": "creators",
+    "pagination": {
+      "limit": 25,
+      "offset": 0,
+      "count": 134,
+      "has_more": true
+    }
   }
 }`}
           </pre>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Campaign and payroll resources are scoped by Supabase RLS to the authenticated user. This endpoint is not an anonymous public API.
+          </p>
           <div className="mt-4 space-y-2">
             <h4 className="text-xs font-semibold">Use Cases</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

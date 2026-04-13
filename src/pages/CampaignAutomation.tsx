@@ -53,7 +53,7 @@ const CampaignAutomation = () => {
       refetch();
       setDialogOpen(false);
     } catch (e: any) {
-      toast.error(e.message || "Failed to create automation");
+      toast.error(e.message || "Failed to create automation process");
     } finally {
       setRunning(false);
     }
