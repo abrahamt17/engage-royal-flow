@@ -44,7 +44,7 @@ const navItems = [
   { icon: Zap, label: "Smart Payroll", path: "/smart-payroll" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: Shield, label: "Fraud Detection", path: "/fraud" },
-  { icon: Network, label: "Influence Graph", path: "/influence-graph" },
+  { icon: Network, label: "Creator Network", path: "/influence-graph" },
   { icon: Scale, label: "Compliance", path: "/compliance" },
   { icon: Award, label: "Loyalty", path: "/loyalty" },
   { icon: Database, label: "Benchmarks", path: "/benchmarks" },
