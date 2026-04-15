@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPerformanceAlert } from "../_shared/performance-alerts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -272,6 +273,29 @@ ${indicators.map((i) => `- [${i.severity}] ${i.description}`).join("\n") || "Non
             fraud_indicators: contentResult.indicators,
           })
           .eq("id", content.id);
+      }
+
+      if (finalScore >= 50) {
+        const { data: relatedCampaignLink } = await supabase
+          .from("campaign_creators")
+          .select("campaign_id")
+          .eq("creator_id", creator.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (relatedCampaignLink?.campaign_id) {
+          await createPerformanceAlert(supabase, {
+            campaign_id: relatedCampaignLink.campaign_id,
+            creator_id: creator.id,
+            alert_type: "warning",
+            title: "High fraud risk detected",
+            message: `${creator.name} was flagged with a fraud risk score of ${finalScore.toFixed(0)}.`,
+            metric_name: "fraud_risk_score",
+            metric_value: Number(finalScore.toFixed(1)),
+            threshold: 50,
+          });
+        }
       }
 
       results.push({
