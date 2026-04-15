@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import { createPerformanceAlert } from "../_shared/performance-alerts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -376,6 +377,48 @@ Deno.serve(async (req) => {
         spent: (campaign.spent || 0) + totalPayment 
       })
       .eq("id", campaign.id);
+
+    if (v >= 1000000 || shareRate >= 0.05) {
+      await createPerformanceAlert(supabaseClient, {
+        campaign_id: campaign.id,
+        creator_id: creator?.id ?? null,
+        content_id: content.id,
+        alert_type: "viral",
+        title: "Content is going viral",
+        message: `${creator?.name ?? "A creator"} crossed a viral threshold on ${platform}.`,
+        metric_name: v >= 1000000 ? "views" : "share_rate_pct",
+        metric_value: v >= 1000000 ? v : Number((shareRate * 100).toFixed(2)),
+        threshold: v >= 1000000 ? 1000000 : 5,
+      });
+    }
+
+    if (perfScore >= 75) {
+      await createPerformanceAlert(supabaseClient, {
+        campaign_id: campaign.id,
+        creator_id: creator?.id ?? null,
+        content_id: content.id,
+        alert_type: "trending",
+        title: "High-performing content detected",
+        message: `${creator?.name ?? "A creator"} submitted content with a strong performance score.`,
+        metric_name: "performance_score",
+        metric_value: Number(perfScore.toFixed(1)),
+        threshold: 75,
+      });
+    }
+
+    if (matchScore < 0.5) {
+      await createPerformanceAlert(supabaseClient, {
+        campaign_id: campaign.id,
+        creator_id: creator?.id ?? null,
+        content_id: content.id,
+        alert_type: "warning",
+        title: "Audience mismatch warning",
+        message: `${creator?.name ?? "A creator"} content under-indexed against the campaign target audience.`,
+        metric_name: "audience_match_score",
+        metric_value: Number((matchScore * 100).toFixed(1)),
+        threshold: 50,
+      });
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
