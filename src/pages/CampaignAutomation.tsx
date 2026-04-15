@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Bot, Loader2, Play, Pause, Zap, Target, Users, DollarSign, Sparkles } from "lucide-react";
-import { useCampaignAutomations } from "@/hooks/useAdvancedData";
+import { useCampaignAutomations, useUpdateCampaignAutomationStatus } from "@/hooks/useAdvancedData";
 import { useCampaigns } from "@/hooks/useData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 const CampaignAutomation = () => {
   const { brandId } = useAuth();
   const { data: automations = [], isLoading, refetch } = useCampaignAutomations();
+  const updateAutomationStatus = useUpdateCampaignAutomationStatus();
   const { data: campaigns = [] } = useCampaigns();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [running, setRunning] = useState(false);
@@ -71,6 +72,17 @@ const CampaignAutomation = () => {
     budget_optimization: "Budget Optimization",
     spend_pacing: "Spend Pacing",
     performance_optimization: "Performance Optimizer",
+  };
+
+  const handleToggleAutomationStatus = async (automationId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === "active" ? "paused" : "active";
+
+    try {
+      await updateAutomationStatus.mutateAsync({ automationId, status: nextStatus });
+      toast.success(`Automation ${nextStatus === "active" ? "resumed" : "paused"}.`);
+    } catch (e: any) {
+      toast.error(e.message || `Failed to ${nextStatus === "active" ? "resume" : "pause"} automation`);
+    }
   };
 
   return (
@@ -195,7 +207,12 @@ const CampaignAutomation = () => {
                       </div>
                       <p className="text-xs text-muted-foreground">Campaign: {auto.campaigns?.name ?? "—"}</p>
                     </div>
-                    <Button variant="outline" size="sm" className="text-xs">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => handleToggleAutomationStatus(auto.id, auto.status)}
+                    >
                       {auto.status === "active" ? <><Pause className="h-3 w-3 mr-1" /> Pause</> : <><Play className="h-3 w-3 mr-1" /> Resume</>}
                     </Button>
                   </div>
