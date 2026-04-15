@@ -22,6 +22,7 @@ const CampaignAutomation = () => {
   const { data: campaigns = [] } = useCampaigns();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [running, setRunning] = useState(false);
+  const [statusActionId, setStatusActionId] = useState<string | null>(null);
 
   // New automation form
   const [selectedCampaign, setSelectedCampaign] = useState("");
@@ -78,10 +79,13 @@ const CampaignAutomation = () => {
     const nextStatus = currentStatus === "active" ? "paused" : "active";
 
     try {
+      setStatusActionId(automationId);
       await updateAutomationStatus.mutateAsync({ automationId, status: nextStatus });
       toast.success(`Automation ${nextStatus === "active" ? "resumed" : "paused"}.`);
     } catch (e: any) {
       toast.error(e.message || `Failed to ${nextStatus === "active" ? "resume" : "pause"} automation`);
+    } finally {
+      setStatusActionId(null);
     }
   };
 
@@ -207,14 +211,23 @@ const CampaignAutomation = () => {
                       </div>
                       <p className="text-xs text-muted-foreground">Campaign: {auto.campaigns?.name ?? "—"}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => handleToggleAutomationStatus(auto.id, auto.status)}
-                    >
-                      {auto.status === "active" ? <><Pause className="h-3 w-3 mr-1" /> Pause</> : <><Play className="h-3 w-3 mr-1" /> Resume</>}
-                    </Button>
+                    {(auto.status === "active" || auto.status === "paused") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => handleToggleAutomationStatus(auto.id, auto.status)}
+                        disabled={statusActionId === auto.id}
+                      >
+                        {statusActionId === auto.id ? (
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Updating</>
+                        ) : auto.status === "active" ? (
+                          <><Pause className="h-3 w-3 mr-1" /> Pause</>
+                        ) : (
+                          <><Play className="h-3 w-3 mr-1" /> Resume</>
+                        )}
+                      </Button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {config.target_audience && (
