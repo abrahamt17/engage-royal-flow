@@ -14,7 +14,7 @@ const InfluenceGraph = () => {
   const influenceData = useMemo(() => {
     if (creators.length === 0) return [];
 
-    // Build co-campaign adjacency for overlap
+    // Build co-campaign adjacency for network overlap
     const creatorCampaigns: Record<string, Set<string>> = {};
     campaignCreators.forEach((cc: any) => {
       if (!creatorCampaigns[cc.creator_id]) creatorCampaigns[cc.creator_id] = new Set();
@@ -24,7 +24,7 @@ const InfluenceGraph = () => {
     return creators.map((c) => {
       const myCampaigns = creatorCampaigns[c.id] || new Set();
 
-      // Overlap scores with other creators
+      // Co-campaign overlap scores with other creators
       const overlaps: { creatorId: string; creatorName: string; overlap: number }[] = [];
       creators.forEach((other) => {
         if (other.id === c.id) return;
@@ -78,7 +78,7 @@ const InfluenceGraph = () => {
   const totalConnections = influenceData.reduce((s, c) => s + c.connections, 0) / 2;
 
   return (
-    <DashboardLayout title="Influence Graph" subtitle="Creator network analysis and audience overlap mapping">
+    <DashboardLayout title="Creator Network" subtitle="Co-campaign network analysis and creator relationship mapping">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card><CardContent className="p-4">
@@ -157,10 +157,10 @@ const InfluenceGraph = () => {
                   </div>
                 </div>
 
-                {/* Audience Overlaps */}
+                {/* Co-Campaign Overlaps */}
                 {c.overlaps.length > 0 && (
                   <div className="border-t border-border pt-3">
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-2">AUDIENCE OVERLAP</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-2">CO-CAMPAIGN OVERLAP</p>
                     <div className="space-y-1.5">
                       {c.overlaps.map((o) => (
                         <div key={o.creatorId} className="flex items-center gap-2">
@@ -170,6 +170,9 @@ const InfluenceGraph = () => {
                         </div>
                       ))}
                     </div>
+                    <p className="mt-2 text-[10px] text-muted-foreground">
+                      Based on shared campaign history, not direct audience-identity data.
+                    </p>
                   </div>
                 )}
               </CardContent>
