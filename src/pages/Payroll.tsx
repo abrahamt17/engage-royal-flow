@@ -106,9 +106,11 @@ const Payroll = () => {
       setSelected(new Set());
       setBatchDialogOpen(false);
       if (result?.successCount !== undefined) {
-        toast.success(`Batch processed: ${result.successCount} succeeded, ${result.failureCount} failed`);
+        const modeLabel = result?.executionMode === "manual" ? "manual handoff prepared" : "automated payout submitted";
+        toast.success(`Batch processed: ${result.successCount} succeeded, ${result.failureCount} failed (${modeLabel})`);
       } else {
-        toast.success("Batch scheduled successfully");
+        const modeLabel = result?.executionMode === "manual" ? "manual handoff queued" : "automated payout queued";
+        toast.success(`Batch scheduled successfully (${modeLabel})`);
       }
     },
     onError: (error) => toast.error(getErrorMessage(error)),

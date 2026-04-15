@@ -96,7 +96,7 @@ const BatchPayoutDialog = ({
               <p className="text-xs font-medium text-card-foreground">Multi-Currency</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Payments will be auto-converted to each creator's preferred currency based on their payment profile.
+              Payments use each creator's preferred currency. PayPal can be automated when credentials are configured; Wise, bank transfer, and Stripe batches are prepared for manual payout handoff.
             </p>
           </div>
         </div>
