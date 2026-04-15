@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPerformanceAlert } from "../_shared/performance-alerts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,6 +215,26 @@ Deno.serve(async (req) => {
         .update({ batch_id: batch.id, payment_method: selectedMethod })
         .in("id", payrollIds);
 
+      if (MANUAL_PAYMENT_METHODS.has(selectedMethod)) {
+        const { data: brandCampaigns } = await supabaseAdmin
+          .from("campaigns")
+          .select("id")
+          .eq("brand_id", brandId)
+          .limit(1)
+          .maybeSingle();
+
+        if (brandCampaigns?.id) {
+          await createPerformanceAlert(supabaseAdmin, {
+            campaign_id: brandCampaigns.id,
+            alert_type: "info",
+            title: "Manual payout batch created",
+            message: `${selectedMethod} batch ${batch.batch_number} requires external payout handoff.`,
+            metric_name: "batch_total",
+            metric_value: totalAmount,
+          });
+        }
+      }
+
       return json({
         batch,
         executionMode: MANUAL_PAYMENT_METHODS.has(selectedMethod) ? "manual" : "automated",
@@ -306,13 +327,40 @@ Deno.serve(async (req) => {
               .eq("id", item.id);
 
             if (hasEmail) successCount += 1;
-            else failureCount += 1;
+            else {
+              failureCount += 1;
+              const campaignId = (item as PayrollItem & { campaign_creators?: { campaign_id?: string } | null }).campaign_creators?.campaign_id;
+              if (campaignId) {
+                await createPerformanceAlert(supabaseAdmin, {
+                  campaign_id: campaignId,
+                  alert_type: "warning",
+                  title: "Payout recipient missing",
+                  message: "A payroll item could not be sent because the creator has no PayPal email configured.",
+                  metric_name: "payroll_amount",
+                  metric_value: item.total_payment,
+                });
+              }
+            }
           }
         } catch (error) {
           await supabaseAdmin
             .from("payout_batches")
             .update({ status: "failed", notes: error instanceof Error ? error.message : "PayPal processing failed" })
             .eq("id", batchId);
+
+          const firstCampaignId = (
+            payrollItems[0] as PayrollItem & { campaign_creators?: { campaign_id?: string } | null }
+          )?.campaign_creators?.campaign_id;
+          if (firstCampaignId) {
+            await createPerformanceAlert(supabaseAdmin, {
+              campaign_id: firstCampaignId,
+              alert_type: "warning",
+              title: "Automated payout failed",
+              message: error instanceof Error ? error.message : "PayPal payout processing failed.",
+              metric_name: "batch_total",
+              metric_value: batch.total_amount,
+            });
+          }
           throw error;
         }
       } else {
@@ -345,6 +393,17 @@ Deno.serve(async (req) => {
             manualCount += 1;
           } else {
             failureCount += 1;
+            const campaignId = (item as PayrollItem & { campaign_creators?: { campaign_id?: string } | null }).campaign_creators?.campaign_id;
+            if (campaignId) {
+              await createPerformanceAlert(supabaseAdmin, {
+                campaign_id: campaignId,
+                alert_type: "warning",
+                title: "Manual payout profile incomplete",
+                message: `${batch.payment_method} payout could not be prepared because the creator payment profile is incomplete.`,
+                metric_name: "payroll_amount",
+                metric_value: item.total_payment,
+              });
+            }
           }
         }
 
@@ -354,6 +413,20 @@ Deno.serve(async (req) => {
             notes: `Manual ${batch.payment_method} payout handoff created. External execution must be completed outside CreatorPay.`,
           })
           .eq("id", batchId);
+
+        const firstCampaignId = (
+          payrollItems[0] as PayrollItem & { campaign_creators?: { campaign_id?: string } | null }
+        )?.campaign_creators?.campaign_id;
+        if (firstCampaignId) {
+          await createPerformanceAlert(supabaseAdmin, {
+            campaign_id: firstCampaignId,
+            alert_type: "info",
+            title: "Manual payout handoff ready",
+            message: `${manualCount} ${batch.payment_method} payout item(s) were prepared for manual processing.`,
+            metric_name: "manual_payout_count",
+            metric_value: manualCount,
+          });
+        }
       }
 
       await supabaseAdmin
