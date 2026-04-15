@@ -31,8 +31,8 @@ const BenchmarkDatabase = () => {
   const createBenchmark = useCreateBenchmark();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterPlatform, setFilterPlatform] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterPlatform, setFilterPlatform] = useState("all");
   const [newCategory, setNewCategory] = useState("");
   const [newPlatform, setNewPlatform] = useState("");
   const [newMetric, setNewMetric] = useState("");
@@ -41,7 +41,7 @@ const BenchmarkDatabase = () => {
 
   const filteredBenchmarks = useMemo(() => {
     let filtered = benchmarks;
-    if (filterCategory) filtered = filtered.filter((b: any) => b.category === filterCategory);
+    if (filterCategory !== "all") filtered = filtered.filter((b: any) => b.category === filterCategory);
     if (filterPlatform && filterPlatform !== "all") filtered = filtered.filter((b: any) => b.platform === filterPlatform);
     return filtered;
   }, [benchmarks, filterCategory, filterPlatform]);
@@ -156,7 +156,7 @@ const BenchmarkDatabase = () => {
               {categorySummary.map((c) => (
                 <button
                   key={c.category}
-                  onClick={() => setFilterCategory(filterCategory === c.category ? "" : c.category)}
+                  onClick={() => setFilterCategory(filterCategory === c.category ? "all" : c.category)}
                   className={`bg-accent/50 rounded-lg p-3 text-left transition-colors ${filterCategory === c.category ? "ring-2 ring-primary" : ""}`}
                 >
                   <p className="text-sm font-semibold">{c.category}</p>
@@ -177,8 +177,8 @@ const BenchmarkDatabase = () => {
             {platforms.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(filterCategory || filterPlatform) && (
-          <Button variant="ghost" size="sm" onClick={() => { setFilterCategory(""); setFilterPlatform(""); }}>Clear filters</Button>
+        {(filterCategory !== "all" || filterPlatform !== "all") && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterCategory("all"); setFilterPlatform("all"); }}>Clear filters</Button>
         )}
       </div>
 
