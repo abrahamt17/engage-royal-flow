@@ -42,7 +42,7 @@ const BenchmarkDatabase = () => {
   const filteredBenchmarks = useMemo(() => {
     let filtered = benchmarks;
     if (filterCategory) filtered = filtered.filter((b: any) => b.category === filterCategory);
-    if (filterPlatform) filtered = filtered.filter((b: any) => b.platform === filterPlatform);
+    if (filterPlatform && filterPlatform !== "all") filtered = filtered.filter((b: any) => b.platform === filterPlatform);
     return filtered;
   }, [benchmarks, filterCategory, filterPlatform]);
 
