@@ -123,3 +123,22 @@ export const useCampaignAutomations = () => {
     enabled: !!brandId,
   });
 };
+
+export const useUpdateCampaignAutomationStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ automationId, status }: { automationId: string; status: string }) => {
+      const { error } = await supabase
+        .from("campaign_automations")
+        .update({
+          status,
+          last_run_at: status === "active" ? new Date().toISOString() : undefined,
+        })
+        .eq("id", automationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaign_automations"] });
+    },
+  });
+};
