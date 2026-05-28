@@ -1,26 +1,22 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Download, CreditCard, Filter, X } from "lucide-react";
+import { Search, Download, CreditCard, Filter, ShieldCheck, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useCreators } from "@/hooks/useData";
 import { exportToCSV } from "@/lib/csvExport";
 import CreatorPaymentProfileDialog from "@/components/payroll/CreatorPaymentProfileDialog";
+import { creatorMatchesPlatform, getRiskLevel, getTrustLabel } from "@/lib/creatorTrust";
 
 const riskStyles: Record<string, string> = {
   low: "bg-success/10 text-success border-success/20",
   medium: "bg-warning/10 text-warning border-warning/20",
   high: "bg-destructive/10 text-destructive border-destructive/20",
-};
-
-const getRiskLevel = (score: number | null) => {
-  if (!score || score < 20) return "low";
-  if (score < 50) return "medium";
-  return "high";
 };
 
 const categories = ["Beauty", "Comedy", "Education", "Fashion", "Fitness", "Food", "Gaming", "Lifestyle", "Music", "Tech", "Travel"];
@@ -58,7 +54,7 @@ const Creators = () => {
       (c.category ?? "").toLowerCase().includes(search.toLowerCase())
     )
     .filter((c) => categoryFilter === "all" || (c.category ?? "").toLowerCase() === categoryFilter.toLowerCase())
-    .filter((c) => platformFilter === "all" || (c.platforms ?? []).includes(platformFilter))
+    .filter((c) => creatorMatchesPlatform(c.platforms, platformFilter))
     .filter((c) => riskFilter === "all" || getRiskLevel(c.fraud_risk_score) === riskFilter)
     .filter((c) => (c.avg_engagement_rate ?? 0) >= minEngagement)
     .sort((a, b) => {
@@ -88,6 +84,7 @@ const Creators = () => {
       name: c.name, handle: c.handle, platforms: c.platforms?.join(", "),
       category: c.category, follower_count: c.follower_count,
       avg_engagement_rate: c.avg_engagement_rate, fraud_risk_score: c.fraud_risk_score,
+      trust_score: c.trust_score,
     }));
     exportToCSV(exportData, `creators-${new Date().toISOString().split("T")[0]}`);
   };
@@ -242,18 +239,33 @@ const Creators = () => {
                       </p>
                     </div>
                   </div>
+                  <div className="mt-3 rounded-md bg-accent/40 px-3 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                      <span className="text-xs text-muted-foreground">Trust Score</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-card-foreground">{c.trust_score ?? 50}</p>
+                      <p className="text-[10px] text-muted-foreground">{getTrustLabel(c.trust_score ?? 50)}</p>
+                    </div>
+                  </div>
                   <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                     {c.category && (
                       <Badge variant="secondary" className="text-xs">{c.category}</Badge>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="ml-auto text-xs"
-                      onClick={() => setPaymentProfileCreator({ id: c.id, name: c.name })}
-                    >
-                      <CreditCard className="h-3 w-3 mr-1" /> Payment
-                    </Button>
+                    <div className="ml-auto flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="text-xs" asChild>
+                        <Link to={`/creator/${c.id}`}>View</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => setPaymentProfileCreator({ id: c.id, name: c.name })}
+                      >
+                        <CreditCard className="h-3 w-3 mr-1" /> Payment
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
