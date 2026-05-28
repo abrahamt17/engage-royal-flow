@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, Shield, Clock, CheckCircle, TrendingUp, type LucideIcon } from "lucide-react";
 import { useCreatorTrustDetails, useCreatorRatings } from "@/hooks/useMarketplaceData";
 import type { Database } from "@/integrations/supabase/types";
+import { clampScore, getTrustLabel } from "@/lib/creatorTrust";
 
 interface Props {
   open: boolean;
@@ -39,18 +40,18 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
 
   const creatorData = creator as Creator;
   const creatorRatings = ratings as CreatorRating[];
-  const trustScore = creatorData.trust_score ?? 50;
+  const trustScore = clampScore(creatorData.trust_score ?? 50);
   const avgRating = creatorRatings.length > 0
     ? creatorRatings.reduce((sum, rating) => sum + rating.overall_rating, 0) / creatorRatings.length
     : 0;
 
   // Trust score breakdown
-  const histPerf = Math.min((creatorData.avg_engagement_rate || 0) * 10, 100);
+  const histPerf = clampScore((creatorData.avg_engagement_rate || 0) * 10);
   const brandRat = avgRating > 0 ? (avgRating / 5) * 100 : 50;
-  const fraudHist = 100 - (creatorData.fraud_risk_score || 0);
-  const delivRel = creatorData.delivery_reliability ?? 0;
-  const audAuth = creatorData.audience_authenticity ?? 50;
-  const contractComp = creatorData.contract_completion_rate ?? 0;
+  const fraudHist = clampScore(100 - (creatorData.fraud_risk_score || 0));
+  const delivRel = clampScore(creatorData.delivery_reliability ?? 0);
+  const audAuth = clampScore(creatorData.audience_authenticity ?? 50);
+  const contractComp = clampScore(creatorData.contract_completion_rate ?? 0);
 
   const calcTrust = 0.30 * histPerf + 0.20 * brandRat + 0.15 * fraudHist + 0.15 * delivRel + 0.10 * audAuth + 0.10 * contractComp;
 
@@ -76,7 +77,7 @@ const CreatorTrustDialog = ({ open, onOpenChange, creatorId }: Props) => {
               <p className="text-3xl font-bold text-primary">{trustScore}</p>
               <p className="text-xs text-muted-foreground">Trust Score</p>
               <Badge variant={trustScore >= 70 ? "default" : trustScore >= 40 ? "secondary" : "destructive"} className="mt-1 text-[10px]">
-                {trustScore >= 80 ? "Excellent" : trustScore >= 60 ? "Good" : trustScore >= 40 ? "Fair" : "Low"}
+                {getTrustLabel(trustScore)}
               </Badge>
             </CardContent>
           </Card>
