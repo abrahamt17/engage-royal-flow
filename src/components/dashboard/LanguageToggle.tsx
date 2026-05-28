@@ -9,15 +9,17 @@ const languages = [
 
 type LanguageCode = (typeof languages)[number]["code"];
 
+const defaultLanguage: LanguageCode = "en";
+
 const getSavedLanguage = (): LanguageCode => {
   const savedLanguage = localStorage.getItem("language");
   return languages.some((language) => language.code === savedLanguage)
     ? (savedLanguage as LanguageCode)
-    : "en";
+    : defaultLanguage;
 };
 
 export const LanguageToggle = () => {
-  const [language, setLanguage] = useState<LanguageCode>("en");
+  const [language, setLanguage] = useState<LanguageCode>(defaultLanguage);
 
   useEffect(() => {
     const initialLanguage = getSavedLanguage();
