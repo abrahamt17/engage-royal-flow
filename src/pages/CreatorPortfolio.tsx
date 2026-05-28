@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Star, TrendingUp, Shield, Users, Award, Globe, MapPin } from "lucide-react";
 import { useCreatorTrustDetails, useCreatorRatings } from "@/hooks/useMarketplaceData";
+import { clampScore, getTrustLabel } from "@/lib/creatorTrust";
 
 const CreatorPortfolio = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,8 +19,7 @@ const CreatorPortfolio = () => {
     ? ratings.reduce((s: number, r: any) => s + r.overall_rating, 0) / ratings.length
     : 0;
 
-  const trustScore = creator.trust_score ?? 50;
-  const getTrustLabel = (s: number) => s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Low";
+  const trustScore = clampScore(creator.trust_score ?? 50);
   const getTrustColor = (s: number) => s >= 80 ? "text-emerald-500" : s >= 60 ? "text-amber-500" : s >= 40 ? "text-orange-500" : "text-destructive";
 
   return (
