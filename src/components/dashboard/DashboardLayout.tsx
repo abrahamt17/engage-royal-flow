@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import DashboardSidebar from "./DashboardSidebar";
 import { MobileSidebar } from "./MobileSidebar";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./LanguageToggle";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ const DashboardLayout = ({ children, title, subtitle, action }: DashboardLayoutP
           </div>
           <div className="flex items-center gap-2">
             {action}
+            <LanguageToggle />
             <ThemeToggle />
           </div>
         </header>
