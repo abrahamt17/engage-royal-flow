@@ -1,19 +1,10 @@
 import { useEffect, useState } from "react";
-import { Check, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const languages = [
-  { code: "en", label: "English", shortLabel: "EN" },
-  { code: "it", label: "Italiano", shortLabel: "IT" },
-  { code: "es", label: "Spanish", shortLabel: "ES" },
-  { code: "fr", label: "French", shortLabel: "FR" },
-  { code: "de", label: "Deutsch", shortLabel: "DE" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "it", label: "Italian", flag: "🇮🇹" },
+  { code: "am", label: "Amharic", flag: "🇪🇹" },
 ] as const;
 
 type LanguageCode = (typeof languages)[number]["code"];
@@ -34,8 +25,6 @@ export const LanguageToggle = () => {
     document.documentElement.lang = initialLanguage;
   }, []);
 
-  const currentLanguage = languages.find((item) => item.code === language) ?? languages[0];
-
   const changeLanguage = (nextLanguage: LanguageCode) => {
     setLanguage(nextLanguage);
     localStorage.setItem("language", nextLanguage);
@@ -43,30 +32,26 @@ export const LanguageToggle = () => {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="h-9 gap-2 px-2.5"
-          aria-label={`Change language. Current language: ${currentLanguage.label}`}
-          title={`Change language. Current language: ${currentLanguage.label}`}
-        >
-          <Languages className="h-4 w-4" />
-          <span className="text-xs font-semibold">{currentLanguage.shortLabel}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
-        {languages.map((item) => (
-          <DropdownMenuItem
+    <div className="flex items-center rounded-md border border-border bg-background p-0.5">
+      {languages.map((item) => {
+        const isSelected = item.code === language;
+
+        return (
+          <Button
             key={item.code}
-            className="gap-2"
+            type="button"
+            variant={isSelected ? "secondary" : "ghost"}
+            size="icon"
+            className="h-8 w-8 text-base"
+            aria-label={`Switch language to ${item.label}`}
+            aria-pressed={isSelected}
+            title={`Switch language to ${item.label}`}
             onClick={() => changeLanguage(item.code)}
           >
-            <span className="flex-1">{item.label}</span>
-            {item.code === language && <Check className="h-4 w-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <span aria-hidden="true">{item.flag}</span>
+          </Button>
+        );
+      })}
+    </div>
   );
 };
