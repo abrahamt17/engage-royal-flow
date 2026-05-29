@@ -26,7 +26,7 @@ const statusStyles: Record<string, string> = {
 const CampaignDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: campaigns = [] } = useCampaigns();
+  const { data: campaigns = [], isLoading: campaignsLoading } = useCampaigns();
   const { data: assignments = [] } = useCampaignCreators(id);
   const { data: allContent = [] } = useCreatorContent();
 
@@ -49,6 +49,14 @@ const CampaignDetail = () => {
   const campaignContent = allContent.filter((content: any) =>
     assignments.some((a: any) => a.id === content.campaign_creator_id)
   );
+
+  if (campaignsLoading) {
+    return (
+      <DashboardLayout title="Loading Campaign...">
+        <p className="text-sm text-muted-foreground">Loading campaign details...</p>
+      </DashboardLayout>
+    );
+  }
 
   if (!campaign) {
     return (
@@ -103,7 +111,7 @@ const CampaignDetail = () => {
             <CardContent>
               <div className="text-2xl font-bold">${totalSpent.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                {((totalSpent / campaign.budget) * 100).toFixed(1)}% of budget
+                {campaign.budget > 0 ? ((totalSpent / campaign.budget) * 100).toFixed(1) : "0.0"}% of budget
               </p>
             </CardContent>
           </Card>
