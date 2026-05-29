@@ -27,6 +27,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { buildCampaignInsert } from "@/lib/campaignForm";
 
 const platformOptions = ["TikTok", "Instagram", "YouTube", "X / Twitter", "Twitch"];
 
@@ -52,39 +53,43 @@ const Campaigns = () => {
 
   const createCampaign = useMutation({
     mutationFn: async () => {
-      if (!brandId) throw new Error("Your brand profile is still loading. Please try again in a moment.");
-      const budgetAmount = parseFloat(budget) || 0;
-      const { data: campaignData, error } = await supabase.from("campaigns").insert({
-        brand_id: brandId,
+      const campaignInsert = buildCampaignInsert({
+        brandId,
         name,
-        budget: budgetAmount,
         platforms,
-        content_type: contentType,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        target_audience: {
-          age_range: ageRange,
-          genders,
-          countries: countries.split(",").map((c) => c.trim()),
-        },
-        payroll_formula: {
-          base_pay: parseFloat(basePay) || 500,
-          performance_multiplier: parseFloat(multiplier) || 2.5,
-          conversion_bonus: parseFloat(conversionBonus) || 0,
-          audience_match_weight: 1.0,
-        },
-      }).select().single();
+        budget,
+        contentType,
+        startDate,
+        endDate,
+        basePay,
+        multiplier,
+        conversionBonus,
+        ageRange,
+        genders,
+        countries,
+      });
+
+      const { data: campaignData, error } = await supabase
+        .from("campaigns")
+        .insert(campaignInsert)
+        .select()
+        .single();
       if (error) throw error;
 
       // Create escrow if enabled
       if (enableEscrow && campaignData) {
         const { error: escrowErr } = await supabase.from("campaign_escrow").insert({
           campaign_id: campaignData.id,
-          amount: budgetAmount,
+          amount: campaignInsert.budget,
           currency: "USD",
         });
-        if (escrowErr) console.error("Escrow creation failed:", escrowErr);
+        if (escrowErr) {
+          await supabase.from("campaigns").delete().eq("id", campaignData.id);
+          throw new Error(`Campaign escrow setup failed: ${escrowErr.message}`);
+        }
       }
+
+      return campaignData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
@@ -92,7 +97,10 @@ const Campaigns = () => {
       setOpen(false);
       resetForm();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Campaign creation failed.";
+      toast.error(message);
+    },
   });
 
   const resetForm = () => {
@@ -120,9 +128,9 @@ const Campaigns = () => {
       <div className="flex justify-end mb-6">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2" disabled={loading}>
+            <Button className="gap-2" disabled={loading || !brandId}>
               <Plus className="h-4 w-4" />
-              New Campaign
+              {loading || !brandId ? "Preparing Brand..." : "New Campaign"}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -175,7 +183,7 @@ const Campaigns = () => {
 
               {/* Platforms */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Platforms</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Platforms *</h3>
                 <div className="flex flex-wrap gap-3">
                   {platformOptions.map((p) => (
                     <label key={p} className="flex items-center gap-2 text-sm cursor-pointer">
