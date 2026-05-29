@@ -12,6 +12,7 @@ import { Link2, Plus, DollarSign, Target, TrendingUp, ShoppingCart, Copy, Check 
 import { useConversionTracking, useCreateTrackingCode } from "@/hooks/useMarketplaceData";
 import { useCampaigns, useCreators } from "@/hooks/useData";
 import { toast } from "sonner";
+import { buildTrackingInsert, calculateConversionMetrics } from "@/lib/conversionTracking";
 
 const ConversionTracking = () => {
   const { data: trackingCodes = [], isLoading } = useConversionTracking();
@@ -26,35 +27,48 @@ const ConversionTracking = () => {
   const [newCode, setNewCode] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const totalClicks = trackingCodes.reduce((s, t) => s + (t.clicks || 0), 0);
-  const totalConversions = trackingCodes.reduce((s, t) => s + (t.conversions || 0), 0);
-  const totalRevenue = trackingCodes.reduce((s, t) => s + (t.revenue || 0), 0);
-  const avgCPA = totalConversions > 0 ? totalRevenue / totalConversions : 0;
+  const metrics = calculateConversionMetrics(trackingCodes as any[]);
+  const rowMetrics = new Map(metrics.rows.map((row) => [row.id, row]));
 
   const handleCreate = async () => {
-    if (!newCampaignId || !newCode) {
-      toast.error("Campaign and tracking code are required");
-      return;
-    }
     try {
-      await createTracking.mutateAsync({
-        campaign_id: newCampaignId,
-        creator_id: newCreatorId || undefined,
-        tracking_type: newType,
-        tracking_code: newCode,
+      const trackingInsert = buildTrackingInsert({
+        campaignId: newCampaignId,
+        creatorId: newCreatorId,
+        trackingType: newType,
+        trackingCode: newCode,
       });
+
+      const duplicate = trackingCodes.some((tracking: any) =>
+        tracking.campaign_id === trackingInsert.campaign_id &&
+        tracking.tracking_code.trim().toLowerCase() === trackingInsert.tracking_code.toLowerCase()
+      );
+
+      if (duplicate) {
+        throw new Error("That tracking code already exists for this campaign.");
+      }
+
+      await createTracking.mutateAsync(trackingInsert);
       toast.success("Tracking code created");
       setDialogOpen(false);
+      setNewType("utm");
+      setNewCampaignId("");
+      setNewCreatorId("");
       setNewCode("");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Tracking code creation failed.";
+      toast.error(message);
     }
   };
 
-  const copyCode = (id: string, code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const copyCode = async (id: string, code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error("Could not copy tracking code.");
+    }
   };
 
   const typeStyles: Record<string, string> = {
@@ -71,7 +85,9 @@ const ConversionTracking = () => {
       action={
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-2" /> New Tracking Code</Button>
+            <Button size="sm" disabled={campaigns.length === 0}>
+              <Plus className="h-4 w-4 mr-2" /> New Tracking Code
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Create Tracking Code</DialogTitle></DialogHeader>
@@ -111,7 +127,7 @@ const ConversionTracking = () => {
                 <Label>Tracking Code / URL</Label>
                 <Input value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder={newType === "utm" ? "https://example.com?utm_source=..." : "PROMO2024"} />
               </div>
-              <Button onClick={handleCreate} disabled={createTracking.isPending} className="w-full">
+              <Button onClick={handleCreate} disabled={createTracking.isPending || !newCampaignId || !newCode.trim()} className="w-full">
                 {createTracking.isPending ? "Creating..." : "Create"}
               </Button>
             </div>
@@ -127,7 +143,7 @@ const ConversionTracking = () => {
               <Target className="h-4 w-4 text-blue-500" />
               <span className="text-xs text-muted-foreground">Total Clicks</span>
             </div>
-            <p className="text-2xl font-bold">{totalClicks.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{metrics.totalClicks.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -136,7 +152,7 @@ const ConversionTracking = () => {
               <ShoppingCart className="h-4 w-4 text-emerald-500" />
               <span className="text-xs text-muted-foreground">Conversions</span>
             </div>
-            <p className="text-2xl font-bold">{totalConversions.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{metrics.totalConversions.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -145,7 +161,7 @@ const ConversionTracking = () => {
               <DollarSign className="h-4 w-4 text-amber-500" />
               <span className="text-xs text-muted-foreground">Revenue</span>
             </div>
-            <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-bold">${metrics.totalRevenue.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -154,7 +170,7 @@ const ConversionTracking = () => {
               <TrendingUp className="h-4 w-4 text-violet-500" />
               <span className="text-xs text-muted-foreground">Avg CPA</span>
             </div>
-            <p className="text-2xl font-bold">${avgCPA.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{metrics.avgCPA === null ? "—" : `$${metrics.avgCPA.toFixed(2)}`}</p>
           </CardContent>
         </Card>
       </div>
@@ -182,12 +198,15 @@ const ConversionTracking = () => {
                   <TableHead className="text-right">Clicks</TableHead>
                   <TableHead className="text-right">Conv.</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">CPA</TableHead>
                   <TableHead className="text-right">ROAS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {trackingCodes.map((t: any) => {
-                  const roas = t.clicks > 0 ? (t.revenue / (t.clicks * 0.5)).toFixed(1) : "—";
+                  const metric = rowMetrics.get(t.id);
+                  const cpaText = metric?.cpa == null ? "—" : `$${metric.cpa.toFixed(2)}`;
+                  const roasText = metric?.roas == null ? "—" : `${metric.roas.toFixed(1)}x`;
                   return (
                     <TableRow key={t.id}>
                       <TableCell>
@@ -198,17 +217,18 @@ const ConversionTracking = () => {
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <code className="text-xs bg-muted px-1.5 py-0.5 rounded max-w-[200px] truncate">{t.tracking_code}</code>
-                          <button onClick={() => copyCode(t.id, t.tracking_code)} className="text-muted-foreground hover:text-foreground">
+                          <button type="button" onClick={() => copyCode(t.id, t.tracking_code)} className="text-muted-foreground hover:text-foreground" title="Copy tracking code">
                             {copiedId === t.id ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">{t.campaigns?.name ?? "—"}</TableCell>
                       <TableCell className="text-xs">{t.creators?.name ?? "—"}</TableCell>
-                      <TableCell className="text-right font-medium">{t.clicks?.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-medium">{t.conversions?.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-medium">${t.revenue?.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-medium">{roas}x</TableCell>
+                      <TableCell className="text-right font-medium">{(t.clicks ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">{(t.conversions ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">${(t.revenue ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">{cpaText}</TableCell>
+                      <TableCell className="text-right font-medium">{roasText}</TableCell>
                     </TableRow>
                   );
                 })}
