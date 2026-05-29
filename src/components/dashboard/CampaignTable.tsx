@@ -50,6 +50,19 @@ const CampaignTable = () => {
 
   const assignCreator = useMutation({
     mutationFn: async () => {
+      if (!selectedCampaign) throw new Error("Select a campaign.");
+      if (!selectedCreator) throw new Error("Select a creator.");
+
+      const alreadyAssigned = assignments.some(
+        (assignment: any) =>
+          assignment.campaign_id === selectedCampaign &&
+          assignment.creator_id === selectedCreator,
+      );
+
+      if (alreadyAssigned) {
+        throw new Error("That creator is already assigned to this campaign.");
+      }
+
       const { error } = await supabase.from("campaign_creators").insert({
         campaign_id: selectedCampaign,
         creator_id: selectedCreator,
@@ -64,7 +77,10 @@ const CampaignTable = () => {
       setSelectedCampaign("");
       setSelectedCreator("");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Creator assignment failed.";
+      toast.error(message);
+    },
   });
 
   const getAssignedCreators = (campaignId: string) => {
@@ -123,6 +139,7 @@ const CampaignTable = () => {
                     <Button
                       size="sm"
                       variant="ghost"
+                      title="Assign creator"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedCampaign(c.id);
@@ -175,7 +192,11 @@ const CampaignTable = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full" disabled={assignCreator.isPending}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={assignCreator.isPending || !selectedCampaign || !selectedCreator}
+            >
               {assignCreator.isPending ? "Assigning..." : "Assign Creator"}
             </Button>
           </form>
