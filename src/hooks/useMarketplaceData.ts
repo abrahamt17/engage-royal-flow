@@ -114,7 +114,7 @@ export const useConversionTracking = (campaignId?: string) => {
     queryFn: async () => {
       let query = supabase
         .from("conversion_tracking")
-        .select("*, campaigns(name), creators(name, handle)")
+        .select("*, campaigns(name, spent, budget), creators(name, handle)")
         .order("created_at", { ascending: false });
       if (campaignId) query = query.eq("campaign_id", campaignId);
       const { data, error } = await query;
@@ -129,7 +129,7 @@ export const useCreateTrackingCode = () => {
   return useMutation({
     mutationFn: async (tracking: {
       campaign_id: string;
-      creator_id?: string;
+      creator_id?: string | null;
       tracking_type: string;
       tracking_code: string;
     }) => {
