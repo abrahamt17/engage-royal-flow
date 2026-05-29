@@ -6,17 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search, Star, Shield, TrendingUp, MapPin, Globe, Filter, X } from "lucide-react";
+import { Search, MapPin, Filter, X } from "lucide-react";
 import { useMarketplaceCreators } from "@/hooks/useMarketplaceData";
 import CreatorTrustDialog from "@/components/marketplace/CreatorTrustDialog";
+import { calculateMarketplaceFitScore, getTrustLabel, isActiveFilterValue } from "@/lib/creatorTrust";
 
 const categories = ["Tech", "Beauty", "Fitness", "Gaming", "Food", "Travel", "Fashion", "Education", "Finance", "Lifestyle"];
-const platforms = ["TikTok", "Instagram", "YouTube", "Twitter", "Twitch"];
+const platforms = ["TikTok", "Instagram", "YouTube", "X / Twitter", "Twitch"];
 
 const CreatorMarketplace = () => {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("");
-  const [platform, setPlatform] = useState<string>("");
+  const [category, setCategory] = useState("all");
+  const [platform, setPlatform] = useState("all");
   const [engagementRange, setEngagementRange] = useState([0, 20]);
   const [followerRange, setFollowerRange] = useState([0, 10000000]);
   const [minTrust, setMinTrust] = useState(0);
@@ -25,12 +26,12 @@ const CreatorMarketplace = () => {
 
   const { data: creators = [], isLoading } = useMarketplaceCreators({
     search,
-    category: category || undefined,
+    category: isActiveFilterValue(category) ? category : undefined,
     minEngagement: engagementRange[0] || undefined,
     maxEngagement: engagementRange[1] < 20 ? engagementRange[1] : undefined,
     minFollowers: followerRange[0] || undefined,
     maxFollowers: followerRange[1] < 10000000 ? followerRange[1] : undefined,
-    platform: platform || undefined,
+    platform: isActiveFilterValue(platform) ? platform : undefined,
     minTrustScore: minTrust || undefined,
   });
 
@@ -41,28 +42,21 @@ const CreatorMarketplace = () => {
     return "text-destructive";
   };
 
-  const getTrustLabel = (score: number) => {
-    if (score >= 80) return "Excellent";
-    if (score >= 60) return "Good";
-    if (score >= 40) return "Fair";
-    return "Low";
-  };
-
-  const calcFitScore = (c: any) => {
-    const engQuality = Math.min((c.avg_engagement_rate || 0) / 10, 1);
-    const audienceAuth = (c.audience_authenticity || 50) / 100;
-    const trustNorm = (c.trust_score || 50) / 100;
-    const categoryMatch = category && c.category?.toLowerCase() === category.toLowerCase() ? 1 : 0.5;
-    return Math.round((0.40 * audienceAuth + 0.25 * categoryMatch + 0.20 * engQuality + 0.15 * trustNorm) * 100);
-  };
-
   const clearFilters = () => {
-    setCategory("");
-    setPlatform("");
+    setCategory("all");
+    setPlatform("all");
     setEngagementRange([0, 20]);
     setFollowerRange([0, 10000000]);
     setMinTrust(0);
   };
+
+  const activeFilterCount = [
+    isActiveFilterValue(category),
+    isActiveFilterValue(platform),
+    engagementRange[0] > 0 || engagementRange[1] < 20,
+    followerRange[0] > 0 || followerRange[1] < 10000000,
+    minTrust > 0,
+  ].filter(Boolean).length;
 
   return (
     <DashboardLayout title="Creator Marketplace" subtitle="Discover and match with top creators">
@@ -74,8 +68,9 @@ const CreatorMarketplace = () => {
         </div>
         <Button variant={showFilters ? "default" : "outline"} onClick={() => setShowFilters(!showFilters)}>
           <Filter className="h-4 w-4 mr-2" /> Filters
+          {activeFilterCount > 0 && <span className="ml-2 text-xs">{activeFilterCount}</span>}
         </Button>
-        {(category || platform || minTrust > 0) && (
+        {activeFilterCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             <X className="h-4 w-4 mr-1" /> Clear
           </Button>
@@ -85,7 +80,7 @@ const CreatorMarketplace = () => {
       {/* Advanced Filters Panel */}
       {showFilters && (
         <Card className="mb-6 animate-fade-in">
-          <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-2 block">Category</label>
               <Select value={category} onValueChange={setCategory}>
@@ -114,6 +109,12 @@ const CreatorMarketplace = () => {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                Followers: {(followerRange[0] / 1000).toFixed(0)}K – {followerRange[1] >= 10000000 ? "10M+" : `${(followerRange[1] / 1000000).toFixed(1)}M`}
+              </label>
+              <Slider min={0} max={10000000} step={50000} value={followerRange} onValueChange={setFollowerRange} className="mt-3" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">
                 Min Trust Score: {minTrust}
               </label>
               <Slider min={0} max={100} step={5} value={[minTrust]} onValueChange={([v]) => setMinTrust(v)} className="mt-3" />
@@ -132,7 +133,7 @@ const CreatorMarketplace = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {creators.map((c: any, i: number) => {
-            const fitScore = calcFitScore(c);
+            const fitScore = calculateMarketplaceFitScore(c, category);
             return (
               <Card
                 key={c.id}

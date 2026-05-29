@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { creatorMatchesCategory, creatorMatchesPlatform, isActiveFilterValue } from "@/lib/creatorTrust";
 
 export const useCreatorTrustDetails = (creatorId?: string) => {
   return useQuery({
@@ -87,17 +88,22 @@ export const useMarketplaceCreators = (filters: {
       if (filters.search) {
         query = query.or(`name.ilike.%${filters.search}%,handle.ilike.%${filters.search}%,category.ilike.%${filters.search}%`);
       }
-      if (filters.category) query = query.eq("category", filters.category);
       if (filters.minEngagement) query = query.gte("avg_engagement_rate", filters.minEngagement);
       if (filters.maxEngagement) query = query.lte("avg_engagement_rate", filters.maxEngagement);
       if (filters.minFollowers) query = query.gte("follower_count", filters.minFollowers);
       if (filters.maxFollowers) query = query.lte("follower_count", filters.maxFollowers);
-      if (filters.platform) query = query.contains("platforms", [filters.platform]);
       if (filters.minTrustScore) query = query.gte("trust_score", filters.minTrustScore);
 
       const { data, error } = await query;
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((creator) => {
+        const matchesCategory = creatorMatchesCategory(creator.category, filters.category);
+        const matchesPlatform = isActiveFilterValue(filters.platform)
+          ? creatorMatchesPlatform(creator.platforms, filters.platform!)
+          : true;
+
+        return matchesCategory && matchesPlatform;
+      });
     },
   });
 };
